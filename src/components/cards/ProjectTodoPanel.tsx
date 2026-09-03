@@ -316,7 +316,7 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
   };
   const today = getTodayValue();
   return (
-    <div className="border-t border-outline/50">
+        <div className="rounded-b-item border-x border-b border-outline/50 bg-overlay">
       <div className="flex items-center justify-between px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">

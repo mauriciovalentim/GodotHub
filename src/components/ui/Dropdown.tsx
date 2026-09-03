@@ -46,6 +46,7 @@ interface NewDropdownProps {
   align?: 'left' | 'right'
   side?: 'top' | 'bottom' | 'left'
   menuClassName?: string
+  activeItemClassName?: string
   compact?: boolean
   children?: ReactNode
   onOpenChange?: (open: boolean) => void
@@ -70,6 +71,7 @@ export function Dropdown({
   align = 'right',
   side = 'bottom',
   menuClassName = '',
+  activeItemClassName = 'text-ink bg-accent hover:bg-accent',
   compact = false,
   children,
   onOpenChange,
@@ -335,7 +337,7 @@ export function Dropdown({
                       item.danger
                         ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
                         : item.active
-                          ? 'text-ink bg-accent hover:bg-accent'
+                          ? activeItemClassName
                           : 'text-muted hover:bg-raised hover:text-ink'
                     }`}
                   >
@@ -408,7 +410,7 @@ export function Dropdown({
                               child.danger
                                 ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
                                 : child.active
-                                  ? 'text-ink bg-accent hover:bg-accent'
+                                  ? activeItemClassName
                                   : 'text-muted hover:bg-raised hover:text-ink'
                             }`}
                           >

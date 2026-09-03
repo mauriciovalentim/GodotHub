@@ -44,6 +44,8 @@ import {
   IconX,
 } from '../../lib/icons'
 
+import { ProjectTodoPanel } from './ProjectTodoPanel'
+
 interface ProjectCardProps {
   project: Project
   installedVersions: InstalledGodotVersion[]
@@ -128,8 +130,9 @@ export function ProjectCard({
   const [newTagValue, setNewTagValue] = useState('')
   const [savingTags, setSavingTags] = useState(false)
   const [tagError, setTagError] = useState<string | null>(null)
-  const [cardHovered, setCardHovered] = useState(false)
+    const [cardHovered, setCardHovered] = useState(false)
   const [pinFocused, setPinFocused] = useState(false)
+  const [showTodoPanel, setShowTodoPanel] = useState(false)
   const editInputRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
 
@@ -269,10 +272,13 @@ export function ProjectCard({
   }
 
   return (
-    <div
-      onMouseEnter={() => setCardHovered(true)}
+    <div>
+      <div
+        onMouseEnter={() => setCardHovered(true)}
       onMouseLeave={() => setCardHovered(false)}
-      className={`group relative flex items-end gap-3.5 p-3.5 rounded-item border transition-all duration-150 ${
+      className={`group relative flex items-end gap-3.5 border p-3.5 transition-all duration-150 ${
+        showTodoPanel ? 'rounded-t-item' : 'rounded-item'
+      } ${
         selected
           ? 'bg-accent/5 border-accent ring-1 ring-accent/30'
           : 'bg-overlay border-outline/50 hover:bg-raised hover:border-accent-dim/60'
@@ -853,6 +859,13 @@ export function ProjectCard({
               tooltip: t('open_terminal'),
               onClick: () => api.openTerminal(project.path).catch((e) => alert(e)),
             },
+            {
+              key: 'project-todo',
+              label: 'Próximos passos',
+              icon: IconCheckCircle,
+              tooltip: 'Próximos passos',
+              onClick: () => setShowTodoPanel(true),
+            },
           ]}
           items={[
           {
@@ -1000,7 +1013,12 @@ export function ProjectCard({
             onClose={() => setSizeModalOpen(false)}
           />
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
+
+      {showTodoPanel && (
+        <ProjectTodoPanel onClose={() => setShowTodoPanel(false)} />
+      )}
     </div>
   )
 }
