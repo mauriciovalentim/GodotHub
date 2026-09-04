@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from "react";
-import { Dropdown } from "../ui/Dropdown";
-import { DatePicker } from "../ui/DatePicker";
-import { IconMore, IconPencil, IconTrash } from "../../lib/icons";
+import { IconCheckCircle } from "../../lib/icons";
 
 import { ProjectTodoModal } from "./ProjectTodoModal";
+import { ProjectTodoDetailsModal } from "./ProjectTodoDetailsModal";
+import { ProjectTodoList } from "./ProjectTodoList";
+import { ProjectTodoListModal } from "./ProjectTodoListModal";
 import { ConfirmDialog } from "../modals/ConfirmDialog";
 
 import type { ProjectTodo, TodoStatus } from "../../types/projectTodo";
@@ -13,6 +14,7 @@ const mockTodos: ProjectTodo[] = [
     id: "1",
     title: "Adicionar ícone do projeto",
     status: "done",
+    area: "art",
     dueDate: "2026-08-20",
     createdAt: "2026-08-15",
   },
@@ -20,12 +22,14 @@ const mockTodos: ProjectTodo[] = [
     id: "2",
     title: "Revisar traduções",
     status: "done",
+    area: "other",
     dueDate: "2026-08-23",
     createdAt: "2026-08-16",
   },
   {
     id: "3",
     title: "Criar menu principal",
+    area: "programming",
     status: "in_progress",
     dueDate: "2026-08-29",
     description: "Implementar o menu principal do jogo com transições suaves.",
@@ -34,6 +38,7 @@ const mockTodos: ProjectTodo[] = [
   {
     id: "4",
     title: "Melhorar interface do launcher",
+    area: "design",
     status: "paused",
     dueDate: "2026-09-02",
     createdAt: "2026-08-20",
@@ -41,6 +46,7 @@ const mockTodos: ProjectTodo[] = [
   {
     id: "5",
     title: "Testar configurações de exportação fela da puta",
+    area: "other",
     status: "todo",
     createdAt: "2026-08-21",
   },
@@ -120,13 +126,10 @@ function sortProjectTodos(
       }
 
       if (statusSort) {
-        const direction =
-          statusSort === "completed-first" ? -1 : 1;
+        const direction = statusSort === "completed-first" ? -1 : 1;
 
         const statusDifference =
-          (statusOrder[a.todo.status] -
-            statusOrder[b.todo.status]) *
-          direction;
+          (statusOrder[a.todo.status] - statusOrder[b.todo.status]) * direction;
 
         if (statusDifference !== 0) {
           return statusDifference;
@@ -138,15 +141,10 @@ function sortProjectTodos(
     .map(({ todo }) => todo);
 }
 
-function haveSameTodoOrder(
-  first: ProjectTodo[],
-  second: ProjectTodo[],
-) {
+function haveSameTodoOrder(first: ProjectTodo[], second: ProjectTodo[]) {
   return (
     first.length === second.length &&
-    first.every(
-      (todo, index) => todo.id === second[index]?.id,
-    )
+    first.every((todo, index) => todo.id === second[index]?.id)
   );
 }
 
@@ -190,9 +188,9 @@ function formatDueDate(
 
 export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
   const [todos, setTodos] = useState<ProjectTodo[]>(mockTodos);
- const [statusSort, setStatusSort] = useState<StatusSort>(null);
-  const [dueDateSort, setDueDateSort] =
-    useState<DueDateSort>("nearest-first");
+  const [statusSort, setStatusSort] = useState<StatusSort>(null);
+  
+  const [dueDateSort, setDueDateSort] = useState<DueDateSort>("nearest-first");
   const addTodo = (todo: ProjectTodo) => {
     setTodos((currentTodos) => [...currentTodos, todo]);
   };
@@ -234,43 +232,47 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
       status: "done",
     });
   };
+
   const [isCreating, setIsCreating] = useState(false);
+  const [viewingTodo, setViewingTodo] = useState<ProjectTodo | null>(null);
   const [editingTodo, setEditingTodo] = useState<ProjectTodo | null>(null);
+  const [showAllTodos, setShowAllTodos] = useState(false);
   const [deletingTodo, setDeletingTodo] = useState<ProjectTodo | null>(null);
 
   const previousStatusRef = useRef<Map<string, TodoStatus>>(new Map());
-  const completedCount = todos.filter((todo) => todo.status === "done").length;
+const pendingCount = todos.filter(
+  (todo) => todo.status !== "done",
+).length;
 
-  const progress =
-    todos.length === 0 ? 0 : (completedCount / todos.length) * 100;
+const sortedTodos = useMemo(
+  () => sortProjectTodos(todos, statusSort, dueDateSort),
+  [todos, statusSort, dueDateSort],
+);
 
-  const sortedTodos = useMemo(
-    () => sortProjectTodos(todos, statusSort, dueDateSort),
-    [todos, statusSort, dueDateSort],
-  );
+const compactTodos = sortedTodos
+  .filter((todo) => todo.status !== "done")
+  .slice(0, 5);
+
+const fullTodos = useMemo(
+  () => [
+    ...sortedTodos.filter((todo) => todo.status !== "done"),
+    ...sortedTodos.filter((todo) => todo.status === "done"),
+  ],
+  [sortedTodos],
+);
 
   const toggleStatusSort = () => {
     const preferredDirection =
-      statusSort === "completed-first"
-        ? "todo-first"
-        : "completed-first";
+      statusSort === "completed-first" ? "todo-first" : "completed-first";
 
     const oppositeDirection =
       preferredDirection === "completed-first"
         ? "todo-first"
         : "completed-first";
 
-    const preferredOrder = sortProjectTodos(
-      todos,
-      preferredDirection,
-      null,
-    );
+    const preferredOrder = sortProjectTodos(todos, preferredDirection, null);
 
-    const oppositeOrder = sortProjectTodos(
-      todos,
-      oppositeDirection,
-      null,
-    );
+    const oppositeOrder = sortProjectTodos(todos, oppositeDirection, null);
 
     const nextDirection =
       haveSameTodoOrder(preferredOrder, sortedTodos) &&
@@ -284,26 +286,16 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
 
   const toggleDueDateSort = () => {
     const preferredDirection =
-      dueDateSort === "nearest-first"
-        ? "farthest-first"
-        : "nearest-first";
+      dueDateSort === "nearest-first" ? "farthest-first" : "nearest-first";
 
     const oppositeDirection =
       preferredDirection === "nearest-first"
         ? "farthest-first"
         : "nearest-first";
 
-    const preferredOrder = sortProjectTodos(
-      todos,
-      null,
-      preferredDirection,
-    );
+    const preferredOrder = sortProjectTodos(todos, null, preferredDirection);
 
-    const oppositeOrder = sortProjectTodos(
-      todos,
-      null,
-      oppositeDirection,
-    );
+    const oppositeOrder = sortProjectTodos(todos, null, oppositeDirection);
 
     const nextDirection =
       haveSameTodoOrder(preferredOrder, sortedTodos) &&
@@ -315,8 +307,15 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
     setDueDateSort(nextDirection);
   };
   const today = getTodayValue();
+
+  const viewingTodoOverdue = viewingTodo
+    ? !!viewingTodo.dueDate &&
+      viewingTodo.dueDate < today &&
+      viewingTodo.status !== "done"
+    : false;
+
   return (
-        <div className="rounded-b-item border-x border-b border-outline/50 bg-overlay">
+    <div className="rounded-b-item border-x border-b border-outline/50 bg-overlay">
       <div className="flex items-center justify-between px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
@@ -325,16 +324,9 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-mono text-muted">
-            {completedCount} / {todos.length} concluídas
-          </span>
-
-          <div className="w-20 h-1 rounded-full bg-raised overflow-hidden">
-            <div
-              className="h-full bg-accent rounded-full"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        <span className="text-[10px] font-mono text-muted">
+  {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
+</span>
 
           <button
             type="button"
@@ -356,232 +348,65 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
         </div>
       </div>
 
-      {/* Tarefas */}
-      <div className="mx-3.5 mb-2 border border-outline/50 rounded-item overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-outline/40 px-3 py-3">
-          <span className="w-3.5 shrink-0" />
+     {/* Tarefas */}
+{todos.length === 0 ? (
+  <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
+    <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent-bright">
+      <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
+    </span>
 
-          <span className="flex-1 text-[9px] font-medium uppercase tracking-wide text-muted/60">
-            Tarefa
-          </span>
+    <p className="text-sm font-medium text-ink">
+      Nenhuma tarefa ainda
+    </p>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleStatusSort}
-              className="focus-ring min-w-[88px] cursor-pointer rounded-btn text-center text-[9px] font-medium uppercase tracking-wide text-muted/60 transition-colors hover:bg-raised hover:text-ink"
-              title="Ordenar por status"
-            >
-              Status{" "}
-              {statusSort === "completed-first"
-                ? "↓"
-                : statusSort === "todo-first"
-                  ? "↑"
-                  : ""}
-            </button>
+    <p className="mt-1 text-[11px] text-muted">
+      Adicione o primeiro próximo passo deste projeto.
+    </p>
 
-            <button
-              type="button"
-              onClick={toggleDueDateSort}
-              className="focus-ring min-w-[48px] cursor-pointer rounded-btn text-right text-[9px] font-medium uppercase tracking-wide text-muted/60 transition-colors hover:bg-raised hover:text-ink"
-              title="Ordenar por prazo"
-            >
-              Prazo{" "}
-              {dueDateSort === "nearest-first"
-                ? "↑"
-                : dueDateSort === "farthest-first"
-                  ? "↓"
-                  : ""}
-            </button>
+    <button
+      type="button"
+      onClick={() => setIsCreating(true)}
+      className="focus-ring mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
+    >
+      <span className="text-xs font-semibold">+</span>
+      Criar tarefa
+    </button>
+  </div>
+) : (
+  <>
+    {pendingCount === 0 ? (
+      <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
+        <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-mint/10 text-mint">
+          <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
+        </span>
 
-            <span className="w-6 shrink-0" />
-          </div>
-        </div>
-        {sortedTodos.map((todo, index) => {
-          const status = statusConfig[todo.status];
-          const completed = todo.status === "done";
-          const overdue =
-            !!todo.dueDate && todo.dueDate < today && todo.status !== "done";
-          return (
-            <div
-              key={todo.id}
-              className={`flex items-center gap-3 px-3 py-2 ${
-                index < sortedTodos.length - 1
-                  ? "border-b border-outline/40"
-                  : ""
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleTodoCompleted(todo)}
-                aria-label={
-                  completed
-                    ? "Marcar tarefa como não concluída"
-                    : "Marcar tarefa como concluída"
-                }
-                className="focus-ring flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-btn"
-              >
-                {completed ? (
-                  <span className="text-mint">✓</span>
-                ) : (
-                  <span className="h-3.5 w-3.5 rounded border border-outline transition-colors hover:border-mint" />
-                )}
-              </button>
+        <p className="text-sm font-medium text-ink">
+          Tudo concluído
+        </p>
 
-              <span
-                className={`flex-1 text-[11px] ${
-                  completed ? "text-muted line-through" : "text-ink"
-                }`}
-              >
-                {todo.title}
-              </span>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <Dropdown
-                  align="right"
-                  compact
-                  activeItemClassName="bg-raised text-ink hover:bg-raised"
-                  menuClassName="!min-w-40!"
-                  trigger={({ open, toggle }) => (
-                    <button
-                      type="button"
-                      onClick={toggle}
-                      aria-label={`Alterar status: ${status.label}`}
-                      aria-expanded={open}
-                      className={`focus-ring min-w-[88px] shrink-0 cursor-pointer rounded-tag border px-2 py-1 text-center text-[10px] transition-all hover:brightness-95 ${status.className} ${
-                        open ? "ring-1 ring-accent/40" : ""
-                      }`}
-                    >
-                      {status.label}
-                    </button>
-                  )}
-                  items={[
-                    {
-                      key: "todo",
-                      label: "A fazer",
-                      leading: (
-                        <span
-                          aria-hidden="true"
-                          className={`mr-1 block h-2 w-2 rounded-full ${statusConfig.todo.dotClassName}`}
-                        />
-                      ),
-                      shortcut: todo.status === "todo" ? "✓" : undefined,
-                      active: todo.status === "todo",
-                      onClick: () => setTodoStatus(todo, "todo"),
-                    },
-                    {
-                      key: "paused",
-                      label: "Em pausa",
-                      leading: (
-                        <span
-                          aria-hidden="true"
-                          className={`mr-1 block h-2 w-2 rounded-full ${statusConfig.paused.dotClassName}`}
-                        />
-                      ),
-                      shortcut: todo.status === "paused" ? "✓" : undefined,
-                      active: todo.status === "paused",
-                      onClick: () => setTodoStatus(todo, "paused"),
-                    },
-                    {
-                      key: "in-progress",
-                      label: "Em andamento",
-                      leading: (
-                        <span
-                          aria-hidden="true"
-                          className={`mr-1 block h-2 w-2 rounded-full ${statusConfig.in_progress.dotClassName}`}
-                        />
-                      ),
-                      shortcut: todo.status === "in_progress" ? "✓" : undefined,
-                      active: todo.status === "in_progress",
-                      onClick: () => setTodoStatus(todo, "in_progress"),
-                    },
-                    {
-                      key: "done",
-                      label: "Concluída",
-                      leading: (
-                        <span
-                          aria-hidden="true"
-                          className={`mr-1 block h-2 w-2 rounded-full ${statusConfig.done.dotClassName}`}
-                        />
-                      ),
-                      shortcut: todo.status === "done" ? "✓" : undefined,
-                      active: todo.status === "done",
-                      onClick: () => setTodoStatus(todo, "done"),
-                    },
-                  ]}
-                />
-
-                {completed ? (
-                  <span className="min-w-[48px] shrink-0 whitespace-nowrap text-right text-[10px] tabular-nums text-muted">
-                    {formatDueDate(todo.dueDate, today, false)}
-                  </span>
-                ) : (
-                  <DatePicker
-                    value={todo.dueDate ?? ""}
-                    onChange={(dueDate) =>
-                      updateTodo({
-                        ...todo,
-                        dueDate: dueDate || undefined,
-                      })
-                    }
-                    compact
-                    markPastDates
-                    displayValue={
-                      <span
-                        className={
-                          overdue ? "font-medium text-danger" : "text-muted"
-                        }
-                        title={overdue ? "Prazo vencido" : undefined}
-                      >
-                        {overdue && <span className="mr-1 font-bold">!</span>}
-
-                        {formatDueDate(todo.dueDate, today, overdue)}
-                      </span>
-                    }
-                  />
-                )}
-
-                <Dropdown
-                  align="right"
-                  compact
-                  trigger={({ open, toggle }) => (
-                    <button
-                      type="button"
-                      aria-label="Ações da tarefa"
-                      aria-expanded={open}
-                      onClick={toggle}
-                      className={`focus-ring flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-btn transition-colors ${
-                        open
-                          ? "bg-raised text-ink"
-                          : "text-muted hover:bg-raised hover:text-ink"
-                      }`}
-                    >
-                      <IconMore className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  items={[
-                    {
-                      key: "edit",
-                      label: "Editar",
-                      icon: IconPencil,
-                      onClick: () => setEditingTodo(todo),
-                      dividerAfter: true,
-                    },
-                    {
-                      key: "delete",
-                      label: "Excluir",
-                      icon: IconTrash,
-                      danger: true,
-                      onClick: () => setDeletingTodo(todo),
-                    },
-                  ]}
-                />
-              </div>
-            </div>
-          );
-        })}
+        <p className="mt-1 text-[11px] text-muted">
+          Você concluiu todos os próximos passos deste projeto.
+        </p>
       </div>
-
+    ) : (
+   <ProjectTodoList
+  todos={compactTodos}
+  today={today}
+  statusSort={statusSort}
+  dueDateSort={dueDateSort}
+  statusConfig={statusConfig}
+  className="mx-3.5 mb-2"
+  formatDueDate={formatDueDate}
+  onToggleStatusSort={toggleStatusSort}
+  onToggleDueDateSort={toggleDueDateSort}
+  onToggleCompleted={toggleTodoCompleted}
+  onSetStatus={setTodoStatus}
+  onUpdate={updateTodo}
+  onView={setViewingTodo}
+  onEdit={setEditingTodo}
+  onDelete={setDeletingTodo}
+/>   
+    )}
       {/* Rodapé */}
       <div className="flex items-center justify-between px-3.5 pb-2.5">
         <span className="text-[10px] text-muted">
@@ -590,11 +415,53 @@ export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
 
         <button
           type="button"
-          className="px-2.5 py-1.5 rounded-btn border border-outline/50 text-[10px] text-muted"
+          className="focus-ring cursor-pointer rounded-btn border border-outline/50 px-2.5 py-1.5 text-[10px] text-muted transition-colors hover:border-accent-dim hover:bg-raised hover:text-ink"
+          onClick={() => setShowAllTodos(true)}
         >
           Ver todas
         </button>
       </div>
+        </>
+)}
+{showAllTodos &&
+  !viewingTodo &&
+  !isCreating &&
+  !editingTodo &&
+  !deletingTodo && (
+    <ProjectTodoListModal
+      totalCount={todos.length}
+      pendingCount={pendingCount}
+      onCreate={() => setIsCreating(true)}
+      onClose={() => setShowAllTodos(false)}
+    >
+      <ProjectTodoList
+        todos={fullTodos}
+        today={today}
+        statusSort={statusSort}
+        dueDateSort={dueDateSort}
+        statusConfig={statusConfig}
+        showArea
+        formatDueDate={formatDueDate}
+        onToggleStatusSort={toggleStatusSort}
+        onToggleDueDateSort={toggleDueDateSort}
+        onToggleCompleted={toggleTodoCompleted}
+        onSetStatus={setTodoStatus}
+        onUpdate={updateTodo}
+        onView={setViewingTodo}
+        onEdit={setEditingTodo}
+        onDelete={setDeletingTodo}
+      />
+    </ProjectTodoListModal>
+  )}
+      {viewingTodo && (
+        <ProjectTodoDetailsModal
+          todo={viewingTodo}
+          statusLabel={statusConfig[viewingTodo.status].label}
+          statusClassName={statusConfig[viewingTodo.status].className}
+          overdue={viewingTodoOverdue}
+          onClose={() => setViewingTodo(null)}
+        />
+      )}
       {isCreating && (
         <ProjectTodoModal
           onClose={() => setIsCreating(false)}

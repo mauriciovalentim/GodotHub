@@ -4,7 +4,11 @@ import { motion } from "framer-motion";
 import { ModalHeader } from "../modals/ModalHeader";
 import { IconCheckCircle, IconPencil } from '../../lib/icons'
 
-import type { ProjectTodo, TodoStatus } from "../../types/projectTodo";
+import type {
+  ProjectTodo,
+  TodoArea,
+  TodoStatus,
+} from "../../types/projectTodo";
 import { DatePicker } from "../ui/DatePicker";
 
 type ProjectTodoModalProps = {
@@ -12,6 +16,18 @@ type ProjectTodoModalProps = {
   onSubmit: (todo: ProjectTodo) => void
   todo?: ProjectTodo
 }
+
+const areaOptions: Array<{
+  value: TodoArea;
+  label: string;
+}> = [
+  { value: "programming", label: "Programação" },
+  { value: "art", label: "Arte" },
+  { value: "audio", label: "Áudio" },
+  { value: "design", label: "Design" },
+  { value: "narrative", label: "Narrativa" },
+  { value: "other", label: "Outro" },
+];
 
 export function ProjectTodoModal({
   onClose,
@@ -28,6 +44,9 @@ const [dueDate, setDueDate] = useState(todo?.dueDate ?? '')
 const [status, setStatus] = useState<TodoStatus>(
   todo?.status ?? 'todo',
 )
+const [area, setArea] = useState<TodoArea>(
+  todo?.area ?? 'other',
+)
 
 const trimmedTitle = title.trim()
 
@@ -36,7 +55,8 @@ const hasChanges =
   trimmedTitle !== todo.title ||
   description.trim() !== (todo.description ?? '') ||
   dueDate !== (todo.dueDate ?? '') ||
-  status !== todo.status
+  status !== todo.status ||
+  area !== (todo.area ?? 'other')
 
 const canSubmit =
   trimmedTitle.length > 0 && hasChanges
@@ -48,6 +68,7 @@ const submit = () => {
       id: todo?.id ?? crypto.randomUUID(),
       title: trimmedTitle,
       status,
+      area,
       description: description.trim() || undefined,
       dueDate: dueDate || undefined,
       createdAt: todo?.createdAt ?? new Date().toISOString(),
@@ -79,7 +100,7 @@ const submit = () => {
     };
   }, []);
 
-  const statusButtonClass = (active: boolean) =>
+  const optionButtonClass = (active: boolean) =>
     `focus-ring cursor-pointer px-3 py-2 rounded-btn border text-xs font-medium transition-colors ${
       active
         ? "border-accent bg-accent/10 text-accent-bright"
@@ -139,6 +160,28 @@ description={
             />
           </div>
 
+                        {/* Área */}
+          <div className="flex flex-col gap-2">
+            <label className="pl-3 text-xs font-medium text-muted">
+              Área
+            </label>
+
+            <div className="flex flex-wrap gap-1.5">
+              {areaOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setArea(option.value)}
+                  className={optionButtonClass(
+                    area === option.value,
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="pl-3 text-xs font-medium text-muted">
@@ -149,7 +192,7 @@ description={
               <button
                 type="button"
                 onClick={() => setStatus("todo")}
-                className={statusButtonClass(status === "todo")}
+                className={optionButtonClass(status === "todo")}
               >
                 A fazer
               </button>
@@ -157,7 +200,7 @@ description={
               <button
                 type="button"
                 onClick={() => setStatus("paused")}
-                className={statusButtonClass(status === "paused")}
+                className={optionButtonClass(status === "paused")}
               >
                 Em pausa
               </button>
@@ -165,19 +208,21 @@ description={
               <button
                 type="button"
                 onClick={() => setStatus("in_progress")}
-                className={statusButtonClass(status === "in_progress")}
+                className={optionButtonClass(status === "in_progress")}
               >
                 Em andamento
               </button>
               <button
                 type="button"
                 onClick={() => setStatus("done")}
-                className={statusButtonClass(status === "done")}
+                className={optionButtonClass(status === "done")}
               >
                 Concluída
               </button>
             </div>
           </div>
+
+      
 
           {/* Descrição */}
           <div className="flex flex-col gap-0.5">
