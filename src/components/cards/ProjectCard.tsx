@@ -274,9 +274,20 @@ export function ProjectCard({
   return (
     <div>
       <div
+      onClick={(event) => {
+  const target = event.target as HTMLElement
+
+  const interactiveElement = target.closest(
+    "button, a, input, textarea, select, [role='button'], [role='menuitem']",
+  )
+
+  if (interactiveElement) return
+
+  setShowTodoPanel((current) => !current)
+}}
         onMouseEnter={() => setCardHovered(true)}
       onMouseLeave={() => setCardHovered(false)}
-      className={`group relative flex items-end gap-3.5 border p-3.5 transition-all duration-150 ${
+      className={`group relative cursor-pointer flex items-end gap-3.5 border p-3.5 transition-all duration-150 ${
         showTodoPanel ? 'rounded-t-item' : 'rounded-item'
       } ${
         selected
@@ -864,7 +875,7 @@ export function ProjectCard({
               label: 'Próximos passos',
               icon: IconCheckCircle,
               tooltip: 'Próximos passos',
-              onClick: () => setShowTodoPanel(true),
+              onClick: () => setShowTodoPanel((current) => !current),
             },
           ]}
           items={[
@@ -1016,9 +1027,20 @@ export function ProjectCard({
         </AnimatePresence>
       </div>
 
-      {showTodoPanel && (
-        <ProjectTodoPanel onClose={() => setShowTodoPanel(false)} />
-      )}
+      <AnimatePresence initial={false}>
+  {showTodoPanel && (
+    <motion.div
+      key="project-todo-panel"
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={springTransition}
+      className="overflow-hidden"
+    >
+      <ProjectTodoPanel onClose={() => setShowTodoPanel(false)} />
+    </motion.div>
+  )}
+</AnimatePresence>
     </div>
   )
 }

@@ -28,11 +28,7 @@ type ProjectTodoListProps = {
   statusConfig: StatusConfig;
   showArea?: boolean;
   className?: string;
-  formatDueDate: (
-    dueDate: string | undefined,
-    today: string,
-    overdue: boolean,
-  ) => string;
+  formatDueDate: (dueDate: string | undefined, today: string) => string;
   onToggleStatusSort: () => void;
   onToggleDueDateSort: () => void;
   onToggleCompleted: (todo: ProjectTodo) => void;
@@ -93,7 +89,7 @@ export function ProjectTodoList({
       type="button"
       onClick={onToggleDueDateSort}
       className={`focus-ring cursor-pointer rounded-btn text-[9px] font-medium uppercase tracking-wide text-muted/60 transition-colors hover:bg-raised hover:text-ink ${
-        showArea ? "w-28 text-center" : "min-w-[48px] text-right"
+        showArea ? "w-28 text-center" : "w-24 text-center"
       }`}
       title="Ordenar por prazo"
     >
@@ -109,8 +105,8 @@ export function ProjectTodoList({
   return (
     <div
       className={`overflow-hidden rounded-item border border-outline/50 ${
-  showArea ? "min-w-[640px]" : ""
-} ${className}`}
+        showArea ? "min-w-[640px]" : ""
+      } ${className}`}
     >
       <div className="flex items-center gap-3 border-b border-outline/40 px-3 py-3">
         <span className="w-3.5 shrink-0" />
@@ -145,8 +141,7 @@ export function ProjectTodoList({
       {todos.map((todo, index) => {
         const status = statusConfig[todo.status];
         const completed = todo.status === "done";
-        const overdue =
-          !!todo.dueDate && todo.dueDate < today && !completed;
+        const overdue = !!todo.dueDate && todo.dueDate < today && !completed;
 
         const statusControl = (
           <Dropdown
@@ -203,8 +198,7 @@ export function ProjectTodoList({
                     className={`mr-1 block h-2 w-2 rounded-full ${statusConfig.in_progress.dotClassName}`}
                   />
                 ),
-                shortcut:
-                  todo.status === "in_progress" ? "✓" : undefined,
+                shortcut: todo.status === "in_progress" ? "✓" : undefined,
                 active: todo.status === "in_progress",
                 onClick: () => onSetStatus(todo, "in_progress"),
               },
@@ -225,57 +219,50 @@ export function ProjectTodoList({
           />
         );
 
-        const dueDateControl = completed ? (
-          <span
-            className={`shrink-0 whitespace-nowrap text-[10px] tabular-nums text-muted ${
-  showArea ? "w-28 text-center" : "min-w-[48px] text-right"
-}`}
-          >
-            {formatDueDate(todo.dueDate, today, false)}
-          </span>
-        ) : (
-          <div
-  className={
-    showArea
-      ? "w-28 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
-      : ""
-  }
->
-            <DatePicker
-              value={todo.dueDate ?? ""}
-              onChange={(dueDate) =>
-                onUpdate({
-                  ...todo,
-                  dueDate: dueDate || undefined,
-                })
-              }
-              compact
-              markPastDates
-              displayValue={
-                <span
-                  className={
-                    overdue ? "font-medium text-danger" : "text-muted"
-                  }
-                  title={overdue ? "Prazo vencido" : undefined}
-                >
-                  {overdue && (
-                    <span className="mr-1 font-bold">!</span>
-                  )}
-
-                  {formatDueDate(todo.dueDate, today, overdue)}
-                </span>
-              }
-            />
-          </div>
-        );
+      const dueDateControl = completed ? (
+  <span
+    aria-hidden="true"
+    className={`shrink-0 ${
+      showArea ? "w-28" : "w-24"
+    }`}
+  />
+) : (
+  <div
+    className={
+  showArea
+    ? "w-28 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
+    : "w-24 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
+}
+  >
+    <DatePicker
+      value={todo.dueDate ?? ""}
+      onChange={(dueDate) =>
+        onUpdate({
+          ...todo,
+          dueDate: dueDate || undefined,
+        })
+      }
+      compact
+      markPastDates
+      displayValue={
+        <span
+          className={
+            overdue ? "font-medium text-danger" : "text-muted"
+          }
+          title={overdue ? "Prazo vencido" : undefined}
+        >
+          {formatDueDate(todo.dueDate, today)}
+        </span>
+      }
+    />
+  </div>
+);
 
         return (
           <div
             key={todo.id}
             className={`flex items-center gap-3 px-3 py-2 ${
-              index < todos.length - 1
-                ? "border-b border-outline/40"
-                : ""
+              index < todos.length - 1 ? "border-b border-outline/40" : ""
             }`}
           >
             <button
@@ -298,6 +285,7 @@ export function ProjectTodoList({
             <button
               type="button"
               onClick={() => onView(todo)}
+              title={todo.title}
               aria-label={`Ver detalhes da tarefa: ${todo.title}`}
               className={`focus-ring min-w-0 flex-1 cursor-pointer truncate rounded-btn text-left text-[11px] transition-colors ${
                 completed

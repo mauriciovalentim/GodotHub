@@ -1,6 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 import { IconCheckCircle } from "../../lib/icons";
 
+import { useTranslation } from "react-i18next";
+
+import { useSettings } from "../../hooks/useSettings";
+import {
+  formatDate,
+  type LastOpenedDateFormat,
+} from "../../lib/lastOpened";
 import { ProjectTodoModal } from "./ProjectTodoModal";
 import { ProjectTodoDetailsModal } from "./ProjectTodoDetailsModal";
 import { ProjectTodoList } from "./ProjectTodoList";
@@ -161,7 +168,8 @@ function getTodayValue() {
 function formatDueDate(
   dueDate: string | undefined,
   today: string,
-  overdue: boolean,
+  dateFormat: LastOpenedDateFormat,
+  locale: string,
 ) {
   if (!dueDate) return "—";
 
@@ -172,21 +180,43 @@ function formatDueDate(
       millisecondsPerDay,
   );
 
-  if (differenceInDays === 0) return "Hoje";
-  if (differenceInDays === 1) return "Amanhã";
-  if (overdue && differenceInDays === -1) return "ontem";
-  if (overdue && differenceInDays >= -7)
-    return `${Math.abs(differenceInDays)} dias`;
+  if (differenceInDays >= -1 && differenceInDays <= 1) {
+    const relativeDate = new Intl.RelativeTimeFormat(locale, {
+      numeric: "auto",
+    }).format(differenceInDays, "day");
 
-  return new Intl.DateTimeFormat("pt-BR", {
+    return relativeDate.replace(/^./u, (character) =>
+      character.toLocaleUpperCase(locale),
+    );
+  }
+
+  const date = new Date(`${dueDate}T00:00:00`);
+
+  if (dueDate.slice(0, 4) !== today.slice(0, 4)) {
+    return formatDate(date, dateFormat);
+  }
+
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
-  })
-    .format(new Date(`${dueDate}T00:00:00`))
-    .replace(" de ", " ");
+  }).format(date);
 }
 
 export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
+    const { settings } = useSettings();
+    const { i18n } = useTranslation();
+const locale = i18n.resolvedLanguage ?? i18n.language;
+
+  const formatTodoDueDate = (
+    dueDate: string | undefined,
+    todayValue: string,
+  ) =>
+    formatDueDate(
+      dueDate,
+      todayValue,
+      settings.last_opened_date_format,
+      locale
+    );
   const [todos, setTodos] = useState<ProjectTodo[]>(mockTodos);
   const [statusSort, setStatusSort] = useState<StatusSort>(null);
   
@@ -256,9 +286,9 @@ const compactTodos = sortedTodos
 const fullTodos = useMemo(
   () => [
     ...sortedTodos.filter((todo) => todo.status !== "done"),
-    ...sortedTodos.filter((todo) => todo.status === "done"),
+    ...todos.filter((todo) => todo.status === "done"),
   ],
-  [sortedTodos],
+  [sortedTodos, todos],
 );
 
   const toggleStatusSort = () => {
@@ -396,7 +426,7 @@ const fullTodos = useMemo(
   dueDateSort={dueDateSort}
   statusConfig={statusConfig}
   className="mx-3.5 mb-2"
-  formatDueDate={formatDueDate}
+  formatDueDate={formatTodoDueDate}
   onToggleStatusSort={toggleStatusSort}
   onToggleDueDateSort={toggleDueDateSort}
   onToggleCompleted={toggleTodoCompleted}
@@ -441,7 +471,7 @@ const fullTodos = useMemo(
         dueDateSort={dueDateSort}
         statusConfig={statusConfig}
         showArea
-        formatDueDate={formatDueDate}
+        formatDueDate={formatTodoDueDate}
         onToggleStatusSort={toggleStatusSort}
         onToggleDueDateSort={toggleDueDateSort}
         onToggleCompleted={toggleTodoCompleted}

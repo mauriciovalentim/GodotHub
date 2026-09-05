@@ -128,6 +128,7 @@ export function ProjectTodoDetailsModal({
             <IconCheckCircle className="h-5 w-5 text-accent-bright" />
           }
           title={todo.title}
+          titleClassName="line-clamp-2 leading-tight"
           description="Detalhes da tarefa"
           onClose={onClose}
           autoFocusBanner={false}
