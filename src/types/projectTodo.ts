@@ -4,7 +4,7 @@ export type ProjectTodo = {
   id: string;
   title: string;
   status: TodoStatus;
-  area?: TodoArea;
+  area: TodoArea;
   dueDate?: string;
   description?: string;
   createdAt: string;
@@ -17,3 +17,4 @@ export type TodoArea =
   | "design"
   | "narrative"
   | "other";
+

@@ -643,3 +643,38 @@ impl<'de> serde::Deserialize<'de> for ChangelogNote {
         })
     }
 }
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TodoStatus {
+    Todo,
+    Paused,
+    InProgress,
+    Done,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TodoArea {
+    Programming,
+    Art,
+    Audio,
+    Design,
+    Narrative,
+    Other,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectTodo {
+    pub id: String,
+    pub title: String,
+    pub status: TodoStatus,
+    pub area: TodoArea,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub due_date: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub created_at: String,
+}

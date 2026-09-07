@@ -14,6 +14,7 @@ mod models;
 mod news;
 mod persist;
 mod projects;
+mod project_todos;
 mod scan;
 mod settings;
 mod sync;
@@ -246,6 +247,8 @@ pub fn run() {
             git_auth::list_user_repos,
             godot_versions::import_version_zip,
             projects::list_projects,
+            project_todos::list_project_todos,
+            project_todos::save_project_todos,
             projects::create_project,
             projects::import_project,
             projects::remove_project,

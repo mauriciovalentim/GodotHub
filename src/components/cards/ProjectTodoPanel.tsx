@@ -1,13 +1,17 @@
-import { useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { IconCheckCircle } from "../../lib/icons";
 
 import { useTranslation } from "react-i18next";
 
 import { useSettings } from "../../hooks/useSettings";
-import {
-  formatDate,
-  type LastOpenedDateFormat,
-} from "../../lib/lastOpened";
+import { useProjectTodos } from "../../hooks/useProjectTodos";
+
+import { formatDate, type LastOpenedDateFormat } from "../../lib/lastOpened";
 import { ProjectTodoModal } from "./ProjectTodoModal";
 import { ProjectTodoDetailsModal } from "./ProjectTodoDetailsModal";
 import { ProjectTodoList } from "./ProjectTodoList";
@@ -16,55 +20,59 @@ import { ConfirmDialog } from "../modals/ConfirmDialog";
 
 import type { ProjectTodo, TodoStatus } from "../../types/projectTodo";
 
-const mockTodos: ProjectTodo[] = [
-  {
-    id: "1",
-    title: "Adicionar ícone do projeto",
-    status: "done",
-    area: "art",
-    dueDate: "2026-08-20",
-    createdAt: "2026-08-15",
-  },
-  {
-    id: "2",
-    title: "Revisar traduções",
-    status: "done",
-    area: "other",
-    dueDate: "2026-08-23",
-    createdAt: "2026-08-16",
-  },
-  {
-    id: "3",
-    title: "Criar menu principal",
-    area: "programming",
-    status: "in_progress",
-    dueDate: "2026-08-29",
-    description: "Implementar o menu principal do jogo com transições suaves.",
-    createdAt: "2026-08-18",
-  },
-  {
-    id: "4",
-    title: "Melhorar interface do launcher",
-    area: "design",
-    status: "paused",
-    dueDate: "2026-09-02",
-    createdAt: "2026-08-20",
-  },
-  {
-    id: "5",
-    title: "Testar configurações de exportação fela da puta",
-    area: "other",
-    status: "todo",
-    createdAt: "2026-08-21",
-  },
-];
+// const mockTodos: ProjectTodo[] = [
+//   {
+//     id: "1",
+//     title: "Adicionar ícone do projeto",
+//     status: "done",
+//     area: "art",
+//     dueDate: "2026-08-20",
+//     createdAt: "2026-08-15",
+//   },
+//   {
+//     id: "2",
+//     title: "Revisar traduções",
+//     status: "done",
+//     area: "other",
+//     dueDate: "2026-08-23",
+//     createdAt: "2026-08-16",
+//   },
+//   {
+//     id: "3",
+//     title: "Criar menu principal",
+//     area: "programming",
+//     status: "in_progress",
+//     dueDate: "2026-08-29",
+//     description: "Implementar o menu principal do jogo com transições suaves.",
+//     createdAt: "2026-08-18",
+//   },
+//   {
+//     id: "4",
+//     title: "Melhorar interface do launcher",
+//     area: "design",
+//     status: "paused",
+//     dueDate: "2026-09-02",
+//     createdAt: "2026-08-20",
+//   },
+//   {
+//     id: "5",
+//     title: "Testar configurações de exportação fela da puta",
+//     area: "other",
+//     status: "todo",
+//     createdAt: "2026-08-21",
+//   },
+// ];
 
 type ProjectTodoPanelProps = {
+  projectId: string;
+  onLoaded: () => void;
   onClose: () => void;
 };
+
 type StatusSort = "completed-first" | "todo-first" | null;
 
 type DueDateSort = "nearest-first" | "farthest-first" | null;
+
 const statusConfig = {
   todo: {
     label: "A fazer",
@@ -202,35 +210,54 @@ function formatDueDate(
   }).format(date);
 }
 
-export function ProjectTodoPanel({ onClose }: ProjectTodoPanelProps) {
-    const { settings } = useSettings();
-    const { i18n } = useTranslation();
-const locale = i18n.resolvedLanguage ?? i18n.language;
+export function ProjectTodoPanel({
+  projectId,
+  onLoaded,
+  onClose,
+}: ProjectTodoPanelProps) {
+  const { settings } = useSettings();
+  const { i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage ?? i18n.language;
 
-  const formatTodoDueDate = (
-    dueDate: string | undefined,
-    todayValue: string,
-  ) =>
+  const formatTodoDueDate = (dueDate: string | undefined, todayValue: string) =>
     formatDueDate(
       dueDate,
       todayValue,
       settings.last_opened_date_format,
-      locale
+      locale,
     );
-  const [todos, setTodos] = useState<ProjectTodo[]>(mockTodos);
+
+  const { todos, saveTodos, loaded } = useProjectTodos(projectId);
+  useEffect(() => {
+  if (loaded) {
+    onLoaded();
+  }
+}, [loaded, onLoaded]);
   const [statusSort, setStatusSort] = useState<StatusSort>(null);
-  
   const [dueDateSort, setDueDateSort] = useState<DueDateSort>("nearest-first");
-  const addTodo = (todo: ProjectTodo) => {
-    setTodos((currentTodos) => [...currentTodos, todo]);
-  };
-  const updateTodo = (updatedTodo: ProjectTodo) => {
-    setTodos((currentTodos) =>
-      currentTodos.map((todo) =>
-        todo.id === updatedTodo.id ? updatedTodo : todo,
-      ),
-    );
-  };
+
+ const addTodo = async (
+  todo: ProjectTodo,
+) => {
+  const nextTodos = [
+    ...todos,
+    todo,
+  ];
+
+  await saveTodos(nextTodos);
+};
+
+  const updateTodo = async (
+  updatedTodo: ProjectTodo,
+): Promise<void> => {
+  const nextTodos = todos.map((todo) =>
+    todo.id === updatedTodo.id
+      ? updatedTodo
+      : todo,
+  );
+
+  await saveTodos(nextTodos);
+};
 
   const setTodoStatus = (todo: ProjectTodo, status: TodoStatus) => {
     previousStatusRef.current.delete(todo.id);
@@ -270,26 +297,24 @@ const locale = i18n.resolvedLanguage ?? i18n.language;
   const [deletingTodo, setDeletingTodo] = useState<ProjectTodo | null>(null);
 
   const previousStatusRef = useRef<Map<string, TodoStatus>>(new Map());
-const pendingCount = todos.filter(
-  (todo) => todo.status !== "done",
-).length;
+  const pendingCount = todos.filter((todo) => todo.status !== "done").length;
 
-const sortedTodos = useMemo(
-  () => sortProjectTodos(todos, statusSort, dueDateSort),
-  [todos, statusSort, dueDateSort],
-);
+  const sortedTodos = useMemo(
+    () => sortProjectTodos(todos, statusSort, dueDateSort),
+    [todos, statusSort, dueDateSort],
+  );
 
-const compactTodos = sortedTodos
-  .filter((todo) => todo.status !== "done")
-  .slice(0, 5);
+  const compactTodos = sortedTodos
+    .filter((todo) => todo.status !== "done")
+    .slice(0, 5);
 
-const fullTodos = useMemo(
-  () => [
-    ...sortedTodos.filter((todo) => todo.status !== "done"),
-    ...todos.filter((todo) => todo.status === "done"),
-  ],
-  [sortedTodos, todos],
-);
+  const fullTodos = useMemo(
+    () => [
+      ...sortedTodos.filter((todo) => todo.status !== "done"),
+      ...todos.filter((todo) => todo.status === "done"),
+    ],
+    [sortedTodos, todos],
+  );
 
   const toggleStatusSort = () => {
     const preferredDirection =
@@ -336,6 +361,7 @@ const fullTodos = useMemo(
     setStatusSort(null);
     setDueDateSort(nextDirection);
   };
+
   const today = getTodayValue();
 
   const viewingTodoOverdue = viewingTodo
@@ -354,9 +380,9 @@ const fullTodos = useMemo(
         </div>
 
         <div className="flex items-center gap-3">
-        <span className="text-[10px] font-mono text-muted">
-  {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
-</span>
+          <span className="text-[10px] font-mono text-muted">
+            {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
+          </span>
 
           <button
             type="button"
@@ -378,111 +404,107 @@ const fullTodos = useMemo(
         </div>
       </div>
 
-     {/* Tarefas */}
-{todos.length === 0 ? (
-  <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
-    <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent-bright">
-      <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
-    </span>
+      {/* Tarefas */}
+      {todos.length === 0 ? (
+        <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
+          <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent-bright">
+            <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
+          </span>
 
-    <p className="text-sm font-medium text-ink">
-      Nenhuma tarefa ainda
-    </p>
+          <p className="text-sm font-medium text-ink">Nenhuma tarefa ainda</p>
 
-    <p className="mt-1 text-[11px] text-muted">
-      Adicione o primeiro próximo passo deste projeto.
-    </p>
+          <p className="mt-1 text-[11px] text-muted">
+            Adicione o primeiro próximo passo deste projeto.
+          </p>
 
-    <button
-      type="button"
-      onClick={() => setIsCreating(true)}
-      className="focus-ring mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
-    >
-      <span className="text-xs font-semibold">+</span>
-      Criar tarefa
-    </button>
-  </div>
-) : (
-  <>
-    {pendingCount === 0 ? (
-      <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
-        <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-mint/10 text-mint">
-          <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
-        </span>
+          <button
+            type="button"
+            onClick={() => setIsCreating(true)}
+            className="focus-ring mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
+          >
+            <span className="text-xs font-semibold">+</span>
+            Criar tarefa
+          </button>
+        </div>
+      ) : (
+        <>
+          {pendingCount === 0 ? (
+            <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
+              <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-mint/10 text-mint">
+                <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
+              </span>
 
-        <p className="text-sm font-medium text-ink">
-          Tudo concluído
-        </p>
+              <p className="text-sm font-medium text-ink">Tudo concluído</p>
 
-        <p className="mt-1 text-[11px] text-muted">
-          Você concluiu todos os próximos passos deste projeto.
-        </p>
-      </div>
-    ) : (
-   <ProjectTodoList
-  todos={compactTodos}
-  today={today}
-  statusSort={statusSort}
-  dueDateSort={dueDateSort}
-  statusConfig={statusConfig}
-  className="mx-3.5 mb-2"
-  formatDueDate={formatTodoDueDate}
-  onToggleStatusSort={toggleStatusSort}
-  onToggleDueDateSort={toggleDueDateSort}
-  onToggleCompleted={toggleTodoCompleted}
-  onSetStatus={setTodoStatus}
-  onUpdate={updateTodo}
-  onView={setViewingTodo}
-  onEdit={setEditingTodo}
-  onDelete={setDeletingTodo}
-/>   
-    )}
-      {/* Rodapé */}
-      <div className="flex items-center justify-between px-3.5 pb-2.5">
-        <span className="text-[10px] text-muted">
-          Use a lista para acompanhar os próximos passos do projeto.
-        </span>
+              <p className="mt-1 text-[11px] text-muted">
+                Você concluiu todos os próximos passos deste projeto.
+              </p>
+            </div>
+          ) : (
+            <ProjectTodoList
+              todos={compactTodos}
+              today={today}
+              statusSort={statusSort}
+              dueDateSort={dueDateSort}
+              statusConfig={statusConfig}
+              className="mx-3.5 mb-2"
+              formatDueDate={formatTodoDueDate}
+              onToggleStatusSort={toggleStatusSort}
+              onToggleDueDateSort={toggleDueDateSort}
+              onToggleCompleted={toggleTodoCompleted}
+              onSetStatus={setTodoStatus}
+              onUpdate={updateTodo}
+              onView={setViewingTodo}
+              onEdit={setEditingTodo}
+              onDelete={setDeletingTodo}
+            />
+          )}
+          {/* Rodapé */}
+          <div className="flex items-center justify-between px-3.5 pb-2.5">
+            <span className="text-[10px] text-muted">
+              Use a lista para acompanhar os próximos passos do projeto.
+            </span>
 
-        <button
-          type="button"
-          className="focus-ring cursor-pointer rounded-btn border border-outline/50 px-2.5 py-1.5 text-[10px] text-muted transition-colors hover:border-accent-dim hover:bg-raised hover:text-ink"
-          onClick={() => setShowAllTodos(true)}
-        >
-          Ver todas
-        </button>
-      </div>
+            <button
+              type="button"
+              className="focus-ring cursor-pointer rounded-btn border border-outline/50 px-2.5 py-1.5 text-[10px] text-muted transition-colors hover:border-accent-dim hover:bg-raised hover:text-ink"
+              onClick={() => setShowAllTodos(true)}
+            >
+              Ver todas
+            </button>
+          </div>
         </>
-)}
-{showAllTodos &&
-  !viewingTodo &&
-  !isCreating &&
-  !editingTodo &&
-  !deletingTodo && (
-    <ProjectTodoListModal
-      totalCount={todos.length}
-      pendingCount={pendingCount}
-      onCreate={() => setIsCreating(true)}
-      onClose={() => setShowAllTodos(false)}
-    >
-      <ProjectTodoList
-        todos={fullTodos}
-        today={today}
-        statusSort={statusSort}
-        dueDateSort={dueDateSort}
-        statusConfig={statusConfig}
-        showArea
-        formatDueDate={formatTodoDueDate}
-        onToggleStatusSort={toggleStatusSort}
-        onToggleDueDateSort={toggleDueDateSort}
-        onToggleCompleted={toggleTodoCompleted}
-        onSetStatus={setTodoStatus}
-        onUpdate={updateTodo}
-        onView={setViewingTodo}
-        onEdit={setEditingTodo}
-        onDelete={setDeletingTodo}
-      />
-    </ProjectTodoListModal>
-  )}
+      )}
+      {showAllTodos &&
+        !viewingTodo &&
+        !isCreating &&
+        !editingTodo &&
+        !deletingTodo && (
+          <ProjectTodoListModal
+            totalCount={todos.length}
+            pendingCount={pendingCount}
+            onCreate={() => setIsCreating(true)}
+            onClose={() => setShowAllTodos(false)}
+          >
+            <ProjectTodoList
+              todos={fullTodos}
+              today={today}
+              statusSort={statusSort}
+              dueDateSort={dueDateSort}
+              statusConfig={statusConfig}
+              showArea
+              formatDueDate={formatTodoDueDate}
+              onToggleStatusSort={toggleStatusSort}
+              onToggleDueDateSort={toggleDueDateSort}
+              onToggleCompleted={toggleTodoCompleted}
+              onSetStatus={setTodoStatus}
+              onUpdate={updateTodo}
+              onView={setViewingTodo}
+              onEdit={setEditingTodo}
+              onDelete={setDeletingTodo}
+            />
+          </ProjectTodoListModal>
+        )}
       {viewingTodo && (
         <ProjectTodoDetailsModal
           todo={viewingTodo}
@@ -518,13 +540,15 @@ const fullTodos = useMemo(
           }
           confirmLabel="Excluir"
           variant="danger"
-          onConfirm={() => {
-            setTodos((currentTodos) =>
-              currentTodos.filter((todo) => todo.id !== deletingTodo.id),
-            );
+          onConfirm={async () => {
+  const nextTodos = todos.filter(
+    (todo) => todo.id !== deletingTodo.id,
+  );
 
-            setDeletingTodo(null);
-          }}
+  await saveTodos(nextTodos);
+
+  setDeletingTodo(null);
+}}
           onCancel={() => setDeletingTodo(null)}
         />
       )}
