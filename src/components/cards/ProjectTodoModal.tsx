@@ -13,7 +13,7 @@ import { DatePicker } from "../ui/DatePicker";
 
 type ProjectTodoModalProps = {
   onClose: () => void
-  onSubmit: (todo: ProjectTodo) => void
+  onSubmit: (todo: ProjectTodo) => Promise<boolean>
   todo?: ProjectTodo
 }
 
@@ -48,6 +48,9 @@ const [area, setArea] = useState<TodoArea>(
   todo?.area ?? 'other',
 )
 
+const [submitting, setSubmitting] = useState(false)
+const [submitError, setSubmitError] = useState(false)
+
 const trimmedTitle = title.trim()
 
 const hasChanges =
@@ -59,9 +62,9 @@ const hasChanges =
   area !== (todo.area ?? 'other')
 
 const canSubmit =
-  trimmedTitle.length > 0 && hasChanges
+  trimmedTitle.length > 0 && hasChanges && !submitting
 
-const submit = () => {
+const submit = async () => {
   if (!canSubmit) return
 
   const savedTodo: ProjectTodo = {
@@ -74,8 +77,18 @@ const submit = () => {
       createdAt: todo?.createdAt ?? new Date().toISOString(),
     }
 
-    onSubmit(savedTodo)
-    onClose()
+    setSubmitting(true)
+setSubmitError(false)
+
+const saved = await onSubmit(savedTodo)
+
+setSubmitting(false)
+
+if (saved) {
+  onClose()
+} else {
+  setSubmitError(true)
+}
   }
 
   useEffect(() => {
@@ -258,6 +271,15 @@ description={
           </div>
         </div>
 
+        {submitError && (
+  <div
+    role="alert"
+    className="mx-6 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
+  >
+    Não foi possível salvar a tarefa. Tente novamente.
+  </div>
+)}
+
         {/* Rodapé */}
         <div className="flex justify-end gap-2 p-5 pt-2">
           <motion.button
@@ -278,7 +300,11 @@ description={
   disabled={!canSubmit}
   className="focus-ring cursor-pointer px-4 py-2.5 rounded-btn bg-accent text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
 >
-  {editing ? 'Salvar alterações' : 'Adicionar tarefa'}
+  {submitting
+  ? 'Salvando...'
+  : editing
+    ? 'Salvar alterações'
+    : 'Adicionar tarefa'}
 </motion.button>
         </div>
       </motion.div>

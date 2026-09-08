@@ -1,6 +1,6 @@
 import { projectTodosApi } from "../api/projectTodos";
-import { useApiData } from "../lib/useApiData";
-import { useCallback } from "react";
+import { useApiDataWithError } from "../lib/useApiData";
+import { useCallback, useState } from "react";
 import type { ProjectTodo } from "../types/projectTodo";
 
 export function useProjectTodos(projectId: string) {
@@ -8,28 +8,58 @@ export function useProjectTodos(projectId: string) {
     data: todos,
     loaded,
     loading,
+    error,
     refresh,
     setData: setTodos,
-  } = useApiData(
+  } = useApiDataWithError(
     () => projectTodosApi.list(projectId),
     [projectId],
     [] as ProjectTodo[],
   );
 
-  const saveTodos = useCallback(
-    async (nextTodos: ProjectTodo[]): Promise<void> => {
-      await projectTodosApi.save(projectId, nextTodos);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [failedTodos, setFailedTodos] = useState<ProjectTodo[] | null>(null);
 
-      setTodos(nextTodos);
+  const saveTodos = useCallback(
+    async (nextTodos: ProjectTodo[]): Promise<boolean> => {
+      setSaving(true);
+      setSaveError(null);
+
+      try {
+  await projectTodosApi.save(projectId, nextTodos);
+
+  setTodos(nextTodos);
+  setFailedTodos(null);
+
+  return true;
+} catch (error) {
+  setFailedTodos(nextTodos);
+  setSaveError(String(error));
+
+  return false;
+} finally {
+  setSaving(false);
+}
     },
     [projectId, setTodos],
   );
 
-  return {
-    todos,
-    loaded,
-    loading,
-    refresh,
-    saveTodos,
-  };
+const retrySave = useCallback(async (): Promise<boolean> => {
+  if (!failedTodos) return false;
+
+  return saveTodos(failedTodos);
+}, [failedTodos, saveTodos]);
+
+return {
+  todos,
+  loaded,
+  loading,
+  error,
+  saving,
+  saveError,
+  refresh,
+  saveTodos,
+  retrySave,
+};
 }

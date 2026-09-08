@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconCheckCircle } from "../../lib/icons";
 
 import { useTranslation } from "react-i18next";
@@ -227,37 +222,39 @@ export function ProjectTodoPanel({
       locale,
     );
 
-  const { todos, saveTodos, loaded } = useProjectTodos(projectId);
+  const {
+    todos,
+    loaded,
+    loading,
+    error,
+    saving,
+    saveError,
+    refresh,
+    saveTodos,
+    retrySave,
+  } = useProjectTodos(projectId);
+
   useEffect(() => {
-  if (loaded) {
-    onLoaded();
-  }
-}, [loaded, onLoaded]);
+    if (loaded) {
+      onLoaded();
+    }
+  }, [loaded, onLoaded]);
   const [statusSort, setStatusSort] = useState<StatusSort>(null);
   const [dueDateSort, setDueDateSort] = useState<DueDateSort>("nearest-first");
 
- const addTodo = async (
-  todo: ProjectTodo,
-) => {
-  const nextTodos = [
-    ...todos,
-    todo,
-  ];
+const addTodo = (todo: ProjectTodo): Promise<boolean> => {
+  const nextTodos = [...todos, todo];
 
-  await saveTodos(nextTodos);
+  return saveTodos(nextTodos);
 };
 
-  const updateTodo = async (
-  updatedTodo: ProjectTodo,
-): Promise<void> => {
-  const nextTodos = todos.map((todo) =>
-    todo.id === updatedTodo.id
-      ? updatedTodo
-      : todo,
-  );
+  const updateTodo = async (updatedTodo: ProjectTodo): Promise<boolean> => {
+    const nextTodos = todos.map((todo) =>
+      todo.id === updatedTodo.id ? updatedTodo : todo,
+    );
 
-  await saveTodos(nextTodos);
-};
+    return saveTodos(nextTodos);
+  };
 
   const setTodoStatus = (todo: ProjectTodo, status: TodoStatus) => {
     previousStatusRef.current.delete(todo.id);
@@ -384,6 +381,15 @@ export function ProjectTodoPanel({
             {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
           </span>
 
+          <span className="flex h-3 w-3 shrink-0 items-center justify-center">
+            {saving && (
+              <span
+                aria-label="Salvando tarefas"
+                className="h-3 w-3 animate-spin rounded-full border-2 border-accent-dim/30 border-t-accent-bright"
+              />
+            )}
+          </span>
+
           <button
             type="button"
             onClick={() => setIsCreating(true)}
@@ -404,8 +410,52 @@ export function ProjectTodoPanel({
         </div>
       </div>
 
+      {saveError && (
+  <div
+    role="alert"
+    title={saveError}
+    className="mx-3.5 mb-2 flex items-center justify-between gap-3 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
+  >
+    <span>Não foi possível salvar as alterações.</span>
+
+    <button
+      type="button"
+      onClick={() => void retrySave()}
+      disabled={saving}
+      className="focus-ring shrink-0 cursor-pointer rounded-btn border border-danger/30 px-2.5 py-1 transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Tentar novamente
+    </button>
+  </div>
+)}
+
       {/* Tarefas */}
-      {todos.length === 0 ? (
+      {loading ? (
+        <div className="mx-3.5 mb-2 flex items-center justify-center rounded-item border border-outline/50 px-4 py-10">
+          <span className="text-[11px] text-muted">Carregando tarefas...</span>
+        </div>
+      ) : error ? (
+        <div
+          className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-danger/30 bg-danger/5 px-4 py-10 text-center"
+          title={error}
+        >
+          <p className="text-sm font-medium text-danger">
+            Não foi possível carregar as tarefas
+          </p>
+
+          <p className="mt-1 text-[11px] text-muted">
+            Seus dados não foram modificados.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="focus-ring mt-4 cursor-pointer rounded-btn border border-outline/50 px-3 py-1.5 text-[11px] text-muted transition-colors hover:bg-raised hover:text-ink"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : todos.length === 0 ? (
         <div className="mx-3.5 mb-2 flex flex-col items-center justify-center rounded-item border border-outline/50 px-4 py-10 text-center">
           <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent-bright">
             <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
@@ -541,14 +591,14 @@ export function ProjectTodoPanel({
           confirmLabel="Excluir"
           variant="danger"
           onConfirm={async () => {
-  const nextTodos = todos.filter(
-    (todo) => todo.id !== deletingTodo.id,
-  );
+            const nextTodos = todos.filter(
+              (todo) => todo.id !== deletingTodo.id,
+            );
 
-  await saveTodos(nextTodos);
+            await saveTodos(nextTodos);
 
-  setDeletingTodo(null);
-}}
+            setDeletingTodo(null);
+          }}
           onCancel={() => setDeletingTodo(null)}
         />
       )}
