@@ -22,44 +22,53 @@ export function useProjectTodos(projectId: string) {
   const [failedTodos, setFailedTodos] = useState<ProjectTodo[] | null>(null);
 
   const saveTodos = useCallback(
-    async (nextTodos: ProjectTodo[]): Promise<boolean> => {
+    async (
+      nextTodos: ProjectTodo[],
+      rememberFailure = true,
+    ): Promise<boolean> => {
       setSaving(true);
-      setSaveError(null);
+
+      if (rememberFailure) {
+        setSaveError(null);
+      }
 
       try {
-  await projectTodosApi.save(projectId, nextTodos);
+        await projectTodosApi.save(projectId, nextTodos);
 
-  setTodos(nextTodos);
-  setFailedTodos(null);
+        setTodos(nextTodos);
+        setFailedTodos(null);
+        setSaveError(null);
 
-  return true;
-} catch (error) {
-  setFailedTodos(nextTodos);
-  setSaveError(String(error));
+        return true;
+      } catch (error) {
+        if (rememberFailure) {
+          setFailedTodos(nextTodos);
+          setSaveError(String(error));
+        }
 
-  return false;
-} finally {
-  setSaving(false);
-}
+        return false;
+      } finally {
+        setSaving(false);
+      }
     },
     [projectId, setTodos],
   );
 
-const retrySave = useCallback(async (): Promise<boolean> => {
-  if (!failedTodos) return false;
+  const retrySave = useCallback(async (): Promise<boolean> => {
+    if (!failedTodos) return false;
 
-  return saveTodos(failedTodos);
-}, [failedTodos, saveTodos]);
+    return saveTodos(failedTodos);
+  }, [failedTodos, saveTodos]);
 
-return {
-  todos,
-  loaded,
-  loading,
-  error,
-  saving,
-  saveError,
-  refresh,
-  saveTodos,
-  retrySave,
-};
+  return {
+    todos,
+    loaded,
+    loading,
+    error,
+    saving,
+    saveError,
+    refresh,
+    saveTodos,
+    retrySave,
+  };
 }

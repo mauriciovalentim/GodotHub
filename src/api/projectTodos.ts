@@ -12,6 +12,9 @@ async function listProjectTodos(projectId: string): Promise<ProjectTodo[]> {
   return projectTodos;
 }
 
-async function saveProjectTodos(projectId: string, todos: ProjectTodo[]): Promise<void> {
-  await invoke<void>('save_project_todos', {projectId,todos})
+async function saveProjectTodos(
+  projectId: string,
+  todos: ProjectTodo[],
+): Promise<void> {
+  await invoke<void>("save_project_todos", { projectId, todos });
 }

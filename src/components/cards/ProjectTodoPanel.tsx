@@ -245,15 +245,18 @@ export function ProjectTodoPanel({
 const addTodo = (todo: ProjectTodo): Promise<boolean> => {
   const nextTodos = [...todos, todo];
 
-  return saveTodos(nextTodos);
+  return saveTodos(nextTodos, false);
 };
 
-  const updateTodo = async (updatedTodo: ProjectTodo): Promise<boolean> => {
+  const updateTodo = async (
+  updatedTodo: ProjectTodo,
+  rememberFailure = true,
+): Promise<boolean> => {
     const nextTodos = todos.map((todo) =>
       todo.id === updatedTodo.id ? updatedTodo : todo,
     );
 
-    return saveTodos(nextTodos);
+    return saveTodos(nextTodos, rememberFailure);
   };
 
   const setTodoStatus = (todo: ProjectTodo, status: TodoStatus) => {
@@ -376,10 +379,6 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] font-mono text-muted">
-            {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
-          </span>
 
           <span className="flex h-3 w-3 shrink-0 items-center justify-center">
             {saving && (
@@ -389,6 +388,11 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
               />
             )}
           </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-mono text-muted">
+            {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
+          </span>
+
 
           <button
             type="button"
@@ -575,7 +579,7 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
         <ProjectTodoModal
           todo={editingTodo}
           onClose={() => setEditingTodo(null)}
-          onSubmit={updateTodo}
+          onSubmit={(todo) => updateTodo(todo, false)}
         />
       )}
 
