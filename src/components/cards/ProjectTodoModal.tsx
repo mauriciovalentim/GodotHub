@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ModalHeader } from "../modals/ModalHeader";
-import { IconCheckCircle, IconPencil } from '../../lib/icons'
+import { IconCheckCircle, IconPencil } from "../../lib/icons";
 
 import type {
   ProjectTodo,
@@ -12,10 +12,10 @@ import type {
 import { DatePicker } from "../ui/DatePicker";
 
 type ProjectTodoModalProps = {
-  onClose: () => void
-  onSubmit: (todo: ProjectTodo) => Promise<boolean>
-  todo?: ProjectTodo
-}
+  onClose: () => void;
+  onSubmit: (todo: ProjectTodo) => Promise<boolean>;
+  todo?: ProjectTodo;
+};
 
 const areaOptions: Array<{
   value: TodoArea;
@@ -34,40 +34,33 @@ export function ProjectTodoModal({
   onSubmit,
   todo,
 }: ProjectTodoModalProps) {
-  const editing = !!todo
+  const editing = !!todo;
 
-  const [title, setTitle] = useState(todo?.title ?? '')
-const [description, setDescription] = useState(
-  todo?.description ?? '',
-)
-const [dueDate, setDueDate] = useState(todo?.dueDate ?? '')
-const [status, setStatus] = useState<TodoStatus>(
-  todo?.status ?? 'todo',
-)
-const [area, setArea] = useState<TodoArea>(
-  todo?.area ?? 'other',
-)
+  const [title, setTitle] = useState(todo?.title ?? "");
+  const [description, setDescription] = useState(todo?.description ?? "");
+  const [dueDate, setDueDate] = useState(todo?.dueDate ?? "");
+  const [status, setStatus] = useState<TodoStatus>(todo?.status ?? "todo");
+  const [area, setArea] = useState<TodoArea>(todo?.area ?? "other");
 
-const [submitting, setSubmitting] = useState(false)
-const [submitError, setSubmitError] = useState(false)
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
 
-const trimmedTitle = title.trim()
+  const trimmedTitle = title.trim();
 
-const hasChanges =
-  !editing ||
-  trimmedTitle !== todo.title ||
-  description.trim() !== (todo.description ?? '') ||
-  dueDate !== (todo.dueDate ?? '') ||
-  status !== todo.status ||
-  area !== (todo.area ?? 'other')
+  const hasChanges =
+    !editing ||
+    trimmedTitle !== todo.title ||
+    description.trim() !== (todo.description ?? "") ||
+    dueDate !== (todo.dueDate ?? "") ||
+    status !== todo.status ||
+    area !== (todo.area ?? "other");
 
-const canSubmit =
-  trimmedTitle.length > 0 && hasChanges && !submitting
+  const canSubmit = trimmedTitle.length > 0 && hasChanges && !submitting;
 
-const submit = async () => {
-  if (!canSubmit) return
+  const submit = async () => {
+    if (!canSubmit) return;
 
-  const savedTodo: ProjectTodo = {
+    const savedTodo: ProjectTodo = {
       id: todo?.id ?? crypto.randomUUID(),
       title: trimmedTitle,
       status,
@@ -75,21 +68,21 @@ const submit = async () => {
       description: description.trim() || undefined,
       dueDate: dueDate || undefined,
       createdAt: todo?.createdAt ?? new Date().toISOString(),
+    };
+
+    setSubmitting(true);
+    setSubmitError(false);
+
+    const saved = await onSubmit(savedTodo);
+
+    setSubmitting(false);
+
+    if (saved) {
+      onClose();
+    } else {
+      setSubmitError(true);
     }
-
-    setSubmitting(true)
-setSubmitError(false)
-
-const saved = await onSubmit(savedTodo)
-
-setSubmitting(false)
-
-if (saved) {
-  onClose()
-} else {
-  setSubmitError(true)
-}
-  }
+  };
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -141,18 +134,18 @@ if (saved) {
       >
         <ModalHeader
           icon={
-  editing ? (
-    <IconPencil className="w-5 h-5 text-accent-bright" />
-  ) : (
-    <IconCheckCircle className="w-5 h-5 text-accent-bright" />
-  )
-}
-          title={editing ? 'Editar tarefa' : 'Nova tarefa'}
-description={
-  editing
-    ? 'Atualize as informações desta tarefa.'
-    : 'Adicione um próximo passo para este projeto.'
-}
+            editing ? (
+              <IconPencil className="w-5 h-5 text-accent-bright" />
+            ) : (
+              <IconCheckCircle className="w-5 h-5 text-accent-bright" />
+            )
+          }
+          title={editing ? "Editar tarefa" : "Nova tarefa"}
+          description={
+            editing
+              ? "Atualize as informações desta tarefa."
+              : "Adicione um próximo passo para este projeto."
+          }
           onClose={onClose}
           autoFocusBanner={false}
         />
@@ -173,11 +166,9 @@ description={
             />
           </div>
 
-                        {/* Área */}
+          {/* Área */}
           <div className="flex flex-col gap-2">
-            <label className="pl-3 text-xs font-medium text-muted">
-              Área
-            </label>
+            <label className="pl-3 text-xs font-medium text-muted">Área</label>
 
             <div className="flex flex-wrap gap-1.5">
               {areaOptions.map((option) => (
@@ -185,9 +176,7 @@ description={
                   key={option.value}
                   type="button"
                   onClick={() => setArea(option.value)}
-                  className={optionButtonClass(
-                    area === option.value,
-                  )}
+                  className={optionButtonClass(area === option.value)}
                 >
                   {option.label}
                 </button>
@@ -235,8 +224,6 @@ description={
             </div>
           </div>
 
-      
-
           {/* Descrição */}
           <div className="flex flex-col gap-0.5">
             <label className="pl-3 text-xs font-medium text-muted">
@@ -272,13 +259,13 @@ description={
         </div>
 
         {submitError && (
-  <div
-    role="alert"
-    className="mx-6 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
-  >
-    Não foi possível salvar a tarefa. Tente novamente.
-  </div>
-)}
+          <div
+            role="alert"
+            className="mx-6 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
+          >
+            Não foi possível salvar a tarefa. Tente novamente.
+          </div>
+        )}
 
         {/* Rodapé */}
         <div className="flex justify-end gap-2 p-5 pt-2">
@@ -293,19 +280,19 @@ description={
           </motion.button>
 
           <motion.button
-  type="button"
-  whileHover={canSubmit ? { y: -1 } : undefined}
-  whileTap={canSubmit ? { scale: 0.96 } : undefined}
-  onClick={submit}
-  disabled={!canSubmit}
-  className="focus-ring cursor-pointer px-4 py-2.5 rounded-btn bg-accent text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
->
-  {submitting
-  ? 'Salvando...'
-  : editing
-    ? 'Salvar alterações'
-    : 'Adicionar tarefa'}
-</motion.button>
+            type="button"
+            whileHover={canSubmit ? { y: -1 } : undefined}
+            whileTap={canSubmit ? { scale: 0.96 } : undefined}
+            onClick={submit}
+            disabled={!canSubmit}
+            className="focus-ring cursor-pointer px-4 py-2.5 rounded-btn bg-accent text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {submitting
+              ? "Salvando..."
+              : editing
+                ? "Salvar alterações"
+                : "Adicionar tarefa"}
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>,

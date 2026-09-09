@@ -28,6 +28,7 @@ type ProjectTodoListProps = {
   statusConfig: StatusConfig;
   showArea?: boolean;
   className?: string;
+  disabled?: boolean;
   formatDueDate: (dueDate: string | undefined, today: string) => string;
   onToggleStatusSort: () => void;
   onToggleDueDateSort: () => void;
@@ -56,6 +57,7 @@ export function ProjectTodoList({
   statusConfig,
   showArea = false,
   className = "",
+  disabled = false,
   formatDueDate,
   onToggleStatusSort,
   onToggleDueDateSort,
@@ -152,10 +154,11 @@ export function ProjectTodoList({
             trigger={({ open, toggle }) => (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={toggle}
                 aria-label={`Alterar status: ${status.label}`}
                 aria-expanded={open}
-                className={`focus-ring shrink-0 cursor-pointer rounded-tag border px-2 py-1 text-center text-[10px] transition-all hover:brightness-95 ${status.className} ${
+                className={`focus-ring shrink-0 cursor-pointer rounded-tag border px-2 py-1 text-center text-[10px] transition-all hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 ${status.className} ${
                   showArea ? "w-28" : "min-w-[88px]"
                 } ${open ? "ring-1 ring-accent/40" : ""}`}
               >
@@ -219,44 +222,41 @@ export function ProjectTodoList({
           />
         );
 
-      const dueDateControl = completed ? (
-  <span
-    aria-hidden="true"
-    className={`shrink-0 ${
-      showArea ? "w-28" : "w-24"
-    }`}
-  />
-) : (
-  <div
-    className={
-  showArea
-    ? "w-28 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
-    : "w-24 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
-}
-  >
-    <DatePicker
-      value={todo.dueDate ?? ""}
-      onChange={(dueDate) =>
-        onUpdate({
-          ...todo,
-          dueDate: dueDate || undefined,
-        })
-      }
-      compact
-      markPastDates
-      displayValue={
-        <span
-          className={
-            overdue ? "font-medium text-danger" : "text-muted"
-          }
-          title={overdue ? "Prazo vencido" : undefined}
-        >
-          {formatDueDate(todo.dueDate, today)}
-        </span>
-      }
-    />
-  </div>
-);
+        const dueDateControl = completed ? (
+          <span
+            aria-hidden="true"
+            className={`shrink-0 ${showArea ? "w-28" : "w-24"}`}
+          />
+        ) : (
+          <div
+            className={
+              showArea
+                ? "w-28 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
+                : "w-24 shrink-0 [&>div]:w-full [&_button]:w-full [&_button]:text-center"
+            }
+          >
+            <DatePicker
+              value={todo.dueDate ?? ""}
+              disabled={disabled}
+              onChange={(dueDate) =>
+                onUpdate({
+                  ...todo,
+                  dueDate: dueDate || undefined,
+                })
+              }
+              compact
+              markPastDates
+              displayValue={
+                <span
+                  className={overdue ? "font-medium text-danger" : "text-muted"}
+                  title={overdue ? "Prazo vencido" : undefined}
+                >
+                  {formatDueDate(todo.dueDate, today)}
+                </span>
+              }
+            />
+          </div>
+        );
 
         return (
           <div
@@ -267,13 +267,14 @@ export function ProjectTodoList({
           >
             <button
               type="button"
+              disabled={disabled}
               onClick={() => onToggleCompleted(todo)}
               aria-label={
                 completed
                   ? "Marcar tarefa como não concluída"
                   : "Marcar tarefa como concluída"
               }
-              className="focus-ring flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-btn"
+              className="focus-ring flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-btn disabled:cursor-not-allowed disabled:opacity-50"
             >
               {completed ? (
                 <span className="text-mint">✓</span>
@@ -323,10 +324,11 @@ export function ProjectTodoList({
                 trigger={({ open, toggle }) => (
                   <button
                     type="button"
+                    disabled={disabled}
                     aria-label="Ações da tarefa"
                     aria-expanded={open}
                     onClick={toggle}
-                    className={`focus-ring flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-btn transition-colors ${
+                    className={`focus-ring flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-btn transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       open
                         ? "bg-raised text-ink"
                         : "text-muted hover:bg-raised hover:text-ink"

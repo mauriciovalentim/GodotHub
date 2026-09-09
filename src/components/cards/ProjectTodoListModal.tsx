@@ -8,6 +8,7 @@ import { ModalHeader } from "../modals/ModalHeader";
 type ProjectTodoListModalProps = {
   totalCount: number;
   pendingCount: number;
+  createDisabled?: boolean;
   onCreate: () => void;
   onClose: () => void;
   children: ReactNode;
@@ -16,6 +17,7 @@ type ProjectTodoListModalProps = {
 export function ProjectTodoListModal({
   totalCount,
   pendingCount,
+  createDisabled = false,
   onCreate,
   onClose,
   children,
@@ -62,9 +64,7 @@ export function ProjectTodoListModal({
         onClick={(event) => event.stopPropagation()}
       >
         <ModalHeader
-          icon={
-            <IconCheckCircle className="h-5 w-5 text-accent-bright" />
-          }
+          icon={<IconCheckCircle className="h-5 w-5 text-accent-bright" />}
           title="Próximos passos"
           description="Visualize e gerencie todas as tarefas deste projeto."
           onClose={onClose}
@@ -74,8 +74,7 @@ export function ProjectTodoListModal({
         <div className="flex min-h-0 flex-1 flex-col p-6 pt-4">
           <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
             <span className="text-[11px] font-mono text-muted">
-              {pendingCount}{" "}
-              {pendingCount === 1 ? "pendente" : "pendentes"}
+              {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
               <span className="mx-2 text-muted/40">•</span>
               {completedCount}{" "}
               {completedCount === 1 ? "concluída" : "concluídas"}
@@ -83,17 +82,16 @@ export function ProjectTodoListModal({
 
             <button
               type="button"
+              disabled={createDisabled}
               onClick={onCreate}
-              className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
+              className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="text-xs font-semibold">+</span>
               Nova tarefa
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-auto pr-1">
-            {children}
-          </div>
+          <div className="min-h-0 flex-1 overflow-auto pr-1">{children}</div>
         </div>
       </motion.div>
     </motion.div>,

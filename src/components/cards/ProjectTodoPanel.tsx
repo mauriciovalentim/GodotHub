@@ -242,16 +242,16 @@ export function ProjectTodoPanel({
   const [statusSort, setStatusSort] = useState<StatusSort>(null);
   const [dueDateSort, setDueDateSort] = useState<DueDateSort>("nearest-first");
 
-const addTodo = (todo: ProjectTodo): Promise<boolean> => {
-  const nextTodos = [...todos, todo];
+  const addTodo = (todo: ProjectTodo): Promise<boolean> => {
+    const nextTodos = [...todos, todo];
 
-  return saveTodos(nextTodos, false);
-};
+    return saveTodos(nextTodos, false);
+  };
 
   const updateTodo = async (
-  updatedTodo: ProjectTodo,
-  rememberFailure = true,
-): Promise<boolean> => {
+    updatedTodo: ProjectTodo,
+    rememberFailure = true,
+  ): Promise<boolean> => {
     const nextTodos = todos.map((todo) =>
       todo.id === updatedTodo.id ? updatedTodo : todo,
     );
@@ -379,25 +379,24 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
           </span>
         </div>
 
-
-          <span className="flex h-3 w-3 shrink-0 items-center justify-center">
-            {saving && (
-              <span
-                aria-label="Salvando tarefas"
-                className="h-3 w-3 animate-spin rounded-full border-2 border-accent-dim/30 border-t-accent-bright"
-              />
-            )}
-          </span>
+        <span className="flex h-3 w-3 shrink-0 items-center justify-center">
+          {saving && (
+            <span
+              aria-label="Salvando tarefas"
+              className="h-3 w-3 animate-spin rounded-full border-2 border-accent-dim/30 border-t-accent-bright"
+            />
+          )}
+        </span>
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-mono text-muted">
             {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
           </span>
 
-
           <button
             type="button"
+            disabled={saving}
             onClick={() => setIsCreating(true)}
-            className="focus-ring cursor-pointer inline-flex items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-2.5 py-1.5 text-[10px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
+            className="focus-ring cursor-pointer inline-flex items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-2.5 py-1.5 text-[10px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-accent/30 disabled:hover:bg-accent/10"
           >
             <span className="text-xs font-semibold">+</span>
             Nova tarefa
@@ -415,23 +414,23 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
       </div>
 
       {saveError && (
-  <div
-    role="alert"
-    title={saveError}
-    className="mx-3.5 mb-2 flex items-center justify-between gap-3 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
-  >
-    <span>Não foi possível salvar as alterações.</span>
+        <div
+          role="alert"
+          title={saveError}
+          className="mx-3.5 mb-2 flex items-center justify-between gap-3 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
+        >
+          <span>Não foi possível salvar as alterações.</span>
 
-    <button
-      type="button"
-      onClick={() => void retrySave()}
-      disabled={saving}
-      className="focus-ring shrink-0 cursor-pointer rounded-btn border border-danger/30 px-2.5 py-1 transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      Tentar novamente
-    </button>
-  </div>
-)}
+          <button
+            type="button"
+            onClick={() => void retrySave()}
+            disabled={saving}
+            className="focus-ring shrink-0 cursor-pointer rounded-btn border border-danger/30 px-2.5 py-1 transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       {/* Tarefas */}
       {loading ? (
@@ -473,6 +472,7 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
 
           <button
             type="button"
+            disabled={saving}
             onClick={() => setIsCreating(true)}
             className="focus-ring mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
           >
@@ -498,6 +498,7 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
             <ProjectTodoList
               todos={compactTodos}
               today={today}
+              disabled={saving}
               statusSort={statusSort}
               dueDateSort={dueDateSort}
               statusConfig={statusConfig}
@@ -537,12 +538,14 @@ const addTodo = (todo: ProjectTodo): Promise<boolean> => {
           <ProjectTodoListModal
             totalCount={todos.length}
             pendingCount={pendingCount}
+            createDisabled={saving}
             onCreate={() => setIsCreating(true)}
             onClose={() => setShowAllTodos(false)}
           >
             <ProjectTodoList
               todos={fullTodos}
               today={today}
+              disabled={saving}
               statusSort={statusSort}
               dueDateSort={dueDateSort}
               statusConfig={statusConfig}

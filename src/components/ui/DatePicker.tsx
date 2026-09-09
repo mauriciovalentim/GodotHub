@@ -4,279 +4,228 @@ import {
   useRef,
   useState,
   type ReactNode,
-} from 'react'
-import { createPortal } from 'react-dom'
+} from "react";
+import { createPortal } from "react-dom";
 
 type DatePickerProps = {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  clearLabel?: string
-  locale?: string
-    markPastDates?: boolean
-  pastDateMessage?: string
-  compact?: boolean
-  displayValue?: ReactNode
-}
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  clearLabel?: string;
+  locale?: string;
+  markPastDates?: boolean;
+  pastDateMessage?: string;
+  compact?: boolean;
+  displayValue?: ReactNode;
+  disabled?: boolean;
+};
 
 type PopoverPosition = {
-  top: number
-  left: number
-}
+  top: number;
+  left: number;
+};
 
 function toDate(value: string) {
-  if (!value) return null
+  if (!value) return null;
 
-  const [year, month, day] = value.split('-').map(Number)
+  const [year, month, day] = value.split("-").map(Number);
 
-  return new Date(year, month - 1, day)
+  return new Date(year, month - 1, day);
 }
 
 function toValue(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-  return `${year}-${month}-${day}`
+  return `${year}-${month}-${day}`;
 }
 
 export function DatePicker({
   value,
   onChange,
-  placeholder = 'Selecionar data',
-  clearLabel = 'Remover data',
-  locale = 'pt-BR',
-    markPastDates = false,
+  placeholder = "Selecionar data",
+  clearLabel = "Remover data",
+  locale = "pt-BR",
+  markPastDates = false,
   pastDateMessage,
   compact = false,
   displayValue,
+  disabled = false,
 }: DatePickerProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const popoverRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
-  const [open, setOpen] = useState(false)
-  const [position, setPosition] =
-    useState<PopoverPosition | null>(null)
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<PopoverPosition | null>(null);
 
-  const selectedDate = toDate(value)
+  const selectedDate = toDate(value);
 
-  const todayValue = toValue(new Date())
+  const todayValue = toValue(new Date());
 
-const selectedIsPast =
-  !!value && value < todayValue
+  const selectedIsPast = !!value && value < todayValue;
 
-  const [viewDate, setViewDate] = useState(
-    selectedDate ?? new Date(),
-  )
+  const [viewDate, setViewDate] = useState(selectedDate ?? new Date());
 
   const formatValue = (dateValue: string) => {
-    const date = toDate(dateValue)
+    const date = toDate(dateValue);
 
-    if (!date) return placeholder
+    if (!date) return placeholder;
 
-    return new Intl.DateTimeFormat(locale).format(date)
-  }
+    return new Intl.DateTimeFormat(locale).format(date);
+  };
 
   const monthFormatter = new Intl.DateTimeFormat(locale, {
-    month: 'long',
-  })
+    month: "long",
+  });
 
   const weekdayFormatter = new Intl.DateTimeFormat(locale, {
-    weekday: 'short',
-  })
+    weekday: "short",
+  });
 
   const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(2026, 0, 4 + index)
+    const date = new Date(2026, 0, 4 + index);
 
-    return weekdayFormatter
-      .format(date)
-      .replace('.', '')
-      .slice(0, 3)
-  })
+    return weekdayFormatter.format(date).replace(".", "").slice(0, 3);
+  });
 
   const updatePosition = () => {
-    const button = buttonRef.current
-    const popover = popoverRef.current
+    const button = buttonRef.current;
+    const popover = popoverRef.current;
 
-    if (!button || !popover) return
+    if (!button || !popover) return;
 
-    const buttonRect = button.getBoundingClientRect()
-    const popoverRect = popover.getBoundingClientRect()
+    const buttonRect = button.getBoundingClientRect();
+    const popoverRect = popover.getBoundingClientRect();
 
-    const gap = 8
-    const viewportPadding = 12
+    const gap = 8;
+    const viewportPadding = 12;
 
-    const spaceBelow =
-      window.innerHeight - buttonRect.bottom - viewportPadding
+    const spaceBelow = window.innerHeight - buttonRect.bottom - viewportPadding;
 
-    const spaceAbove =
-      buttonRect.top - viewportPadding
+    const spaceAbove = buttonRect.top - viewportPadding;
 
     const openAbove =
-      spaceBelow < popoverRect.height &&
-      spaceAbove > spaceBelow
+      spaceBelow < popoverRect.height && spaceAbove > spaceBelow;
 
     let top = openAbove
       ? buttonRect.top - popoverRect.height - gap
-      : buttonRect.bottom + gap
+      : buttonRect.bottom + gap;
 
     top = Math.max(
       viewportPadding,
-      Math.min(
-        top,
-        window.innerHeight -
-          popoverRect.height -
-          viewportPadding,
-      ),
-    )
+      Math.min(top, window.innerHeight - popoverRect.height - viewportPadding),
+    );
 
-    let left = buttonRect.left
+    let left = buttonRect.left;
 
     left = Math.max(
       viewportPadding,
-      Math.min(
-        left,
-        window.innerWidth -
-          popoverRect.width -
-          viewportPadding,
-      ),
-    )
+      Math.min(left, window.innerWidth - popoverRect.width - viewportPadding),
+    );
 
     setPosition({
       top,
       left,
-    })
-  }
+    });
+  };
 
   useLayoutEffect(() => {
     if (!open) {
-      setPosition(null)
-      return
+      setPosition(null);
+      return;
     }
 
-    updatePosition()
-  }, [open, viewDate, value])
+    updatePosition();
+  }, [open, viewDate, value]);
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
-    const handleOutsidePointerDown = (
-      event: PointerEvent,
-    ) => {
-      const target = event.target as Node
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
 
-      const clickedTrigger =
-        containerRef.current?.contains(target)
+      const clickedTrigger = containerRef.current?.contains(target);
 
-      const clickedPopover =
-        popoverRef.current?.contains(target)
+      const clickedPopover = popoverRef.current?.contains(target);
 
       if (clickedTrigger || clickedPopover) {
-        return
+        return;
       }
 
-      event.preventDefault()
-      event.stopPropagation()
+      event.preventDefault();
+      event.stopPropagation();
 
-      setOpen(false)
-    }
+      setOpen(false);
+    };
 
-    document.addEventListener(
-      'pointerdown',
-      handleOutsidePointerDown,
-      true,
-    )
+    document.addEventListener("pointerdown", handleOutsidePointerDown, true);
 
     return () => {
       document.removeEventListener(
-        'pointerdown',
+        "pointerdown",
         handleOutsidePointerDown,
         true,
-      )
-    }
-  }, [open])
+      );
+    };
+  }, [open]);
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
     const handlePositionChange = () => {
-      updatePosition()
-    }
+      updatePosition();
+    };
 
-    window.addEventListener(
-      'resize',
-      handlePositionChange,
-    )
+    window.addEventListener("resize", handlePositionChange);
 
-    document.addEventListener(
-      'scroll',
-      handlePositionChange,
-      true,
-    )
+    document.addEventListener("scroll", handlePositionChange, true);
 
     return () => {
-      window.removeEventListener(
-        'resize',
-        handlePositionChange,
-      )
+      window.removeEventListener("resize", handlePositionChange);
 
-      document.removeEventListener(
-        'scroll',
-        handlePositionChange,
-        true,
-      )
-    }
-  }, [open])
+      document.removeEventListener("scroll", handlePositionChange, true);
+    };
+  }, [open]);
 
   const openPicker = () => {
-    setViewDate(toDate(value) ?? new Date())
-    setOpen(true)
-  }
+    setViewDate(toDate(value) ?? new Date());
+    setOpen(true);
+  };
 
   const changeMonth = (offset: number) => {
     setViewDate(
       (current) =>
-        new Date(
-          current.getFullYear(),
-          current.getMonth() + offset,
-          1,
-        ),
-    )
-  }
+        new Date(current.getFullYear(), current.getMonth() + offset, 1),
+    );
+  };
 
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
 
-  const firstDay = new Date(year, month, 1)
-  const startOffset = firstDay.getDay()
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
 
-  const calendarStart = new Date(
-    year,
-    month,
-    1 - startOffset,
-  )
+  const calendarStart = new Date(year, month, 1 - startOffset);
 
-  const days = Array.from(
-    { length: 42 },
-    (_, index) => {
-      const date = new Date(calendarStart)
+  const days = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(calendarStart);
 
-      date.setDate(calendarStart.getDate() + index)
+    date.setDate(calendarStart.getDate() + index);
 
-      return date
-    },
-  )
+    return date;
+  });
 
   const selectDate = (date: Date) => {
-    onChange(toValue(date))
-    setOpen(false)
-  }
+    onChange(toValue(date));
+    setOpen(false);
+  };
 
   const clearDate = () => {
-    onChange('')
-    setOpen(false)
-  }
+    onChange("");
+    setOpen(false);
+  };
 
   const calendar = open
     ? createPortal(
@@ -286,9 +235,7 @@ const selectedIsPast =
           style={{
             top: position?.top ?? 0,
             left: position?.left ?? 0,
-            visibility: position
-              ? 'visible'
-              : 'hidden',
+            visibility: position ? "visible" : "hidden",
           }}
         >
           <div className="mb-3 flex items-center justify-between">
@@ -306,9 +253,7 @@ const selectedIsPast =
                 {monthFormatter.format(viewDate)}
               </span>
 
-              <span className="text-muted">
-                {year}
-              </span>
+              <span className="text-muted">{year}</span>
             </div>
 
             <button
@@ -334,30 +279,28 @@ const selectedIsPast =
 
           <div className="grid grid-cols-7 gap-0.5">
             {days.map((date) => {
-              const dateValue = toValue(date)
-              const selected = value === dateValue
-              const currentMonth =
-                date.getMonth() === month
-const past =
-  markPastDates && dateValue < todayValue
+              const dateValue = toValue(date);
+              const selected = value === dateValue;
+              const currentMonth = date.getMonth() === month;
+              const past = markPastDates && dateValue < todayValue;
               return (
                 <button
                   key={dateValue}
                   type="button"
                   onClick={() => selectDate(date)}
                   className={`focus-ring aspect-square cursor-pointer rounded-btn text-xs transition-colors ${
-        selected
-          ? 'bg-accent text-white'
-          : currentMonth
-            ? past
-  ? 'text-muted/40 hover:bg-raised hover:text-muted'
-              : 'text-ink hover:bg-raised'
-            : 'text-muted/35 hover:bg-raised hover:text-muted'
-      }`}
+                    selected
+                      ? "bg-accent text-white"
+                      : currentMonth
+                        ? past
+                          ? "text-muted/40 hover:bg-raised hover:text-muted"
+                          : "text-ink hover:bg-raised"
+                        : "text-muted/35 hover:bg-raised hover:text-muted"
+                  }`}
                 >
                   {date.getDate()}
                 </button>
-              )
+              );
             })}
           </div>
 
@@ -375,55 +318,48 @@ const past =
         </div>,
         document.body,
       )
-    : null
+    : null;
 
   return (
     <>
-            <div
-        ref={containerRef}
-        className={compact ? 'shrink-0' : undefined}
-      >
+      <div ref={containerRef} className={compact ? "shrink-0" : undefined}>
         <button
           ref={buttonRef}
           type="button"
+          disabled={disabled}
           aria-label={
             compact
               ? value
                 ? `Alterar prazo: ${formatValue(value)}`
-                : 'Adicionar prazo'
+                : "Adicionar prazo"
               : undefined
           }
           onClick={() => {
             if (open) {
-              setOpen(false)
+              setOpen(false);
             } else {
-              openPicker()
+              openPicker();
             }
           }}
           className={
             compact
-              ? 'focus-ring min-w-[48px] cursor-pointer whitespace-nowrap rounded-btn px-1 py-1 text-right text-[10px] tabular-nums text-muted transition-colors hover:bg-raised hover:text-ink'
+              ? "focus-ring min-w-[48px] cursor-pointer whitespace-nowrap rounded-btn px-1 py-1 text-right text-[10px] tabular-nums text-muted transition-colors hover:bg-raised hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
               : `focus-ring w-full cursor-pointer rounded-item border px-3.5 py-2.5 text-left text-sm font-mono transition-colors ${
                   value
-                    ? 'bg-overlay border-outline/50 text-ink hover:border-accent-dim'
-                    : 'bg-overlay border-outline/50 text-muted hover:border-accent-dim'
+                    ? "bg-overlay border-outline/50 text-ink hover:border-accent-dim"
+                    : "bg-overlay border-outline/50 text-muted hover:border-accent-dim"
                 }`
           }
         >
           {displayValue ?? formatValue(value)}
         </button>
 
-        {!compact &&
-          markPastDates &&
-          selectedIsPast &&
-          pastDateMessage && (
-            <p className="mt-1 pl-3 text-[10px] text-danger">
-              {pastDateMessage}
-            </p>
-          )}
+        {!compact && markPastDates && selectedIsPast && pastDateMessage && (
+          <p className="mt-1 pl-3 text-[10px] text-danger">{pastDateMessage}</p>
+        )}
       </div>
 
       {calendar}
     </>
-  )
+  );
 }
