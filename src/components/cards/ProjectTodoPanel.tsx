@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IconCheckCircle } from "../../lib/icons";
 
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 
 import { useSettings } from "../../hooks/useSettings";
 import { useProjectTodos } from "../../hooks/useProjectTodos";
@@ -67,32 +67,6 @@ type ProjectTodoPanelProps = {
 type StatusSort = "completed-first" | "todo-first" | null;
 
 type DueDateSort = "nearest-first" | "farthest-first" | null;
-
-const statusConfig = {
-  todo: {
-    label: "A fazer",
-    className: "bg-raised text-ink border border-outline/40",
-    dotClassName: "bg-muted",
-  },
-  paused: {
-    label: "Em pausa",
-    className: "bg-amber/20 text-ink border border-amber/30",
-    dotClassName: "bg-amber",
-  },
-  in_progress: {
-    label: "Em andamento",
-    className: "bg-accent/15 text-ink border border-accent/30",
-    dotClassName: "bg-accent",
-  },
-  done: {
-    label: "Concluída",
-    className: "bg-mint/15 text-ink border border-mint/30",
-    dotClassName: "bg-mint",
-  },
-} satisfies Record<
-  TodoStatus,
-  { label: string; className: string; dotClassName: string }
->;
 
 const statusOrder = {
   todo: 0,
@@ -211,9 +185,33 @@ export function ProjectTodoPanel({
   onClose,
 }: ProjectTodoPanelProps) {
   const { settings } = useSettings();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation(["todos", "common"]);
   const locale = i18n.resolvedLanguage ?? i18n.language;
-
+  const statusConfig = {
+    todo: {
+      label: t("status_todo"),
+      className: "bg-raised text-ink border border-outline/40",
+      dotClassName: "bg-muted",
+    },
+    paused: {
+      label: t("status_paused"),
+      className: "bg-amber/20 text-ink border border-amber/30",
+      dotClassName: "bg-amber",
+    },
+    in_progress: {
+      label: t("status_in_progress"),
+      className: "bg-accent/15 text-ink border border-accent/30",
+      dotClassName: "bg-accent",
+    },
+    done: {
+      label: t("status_done"),
+      className: "bg-mint/15 text-ink border border-mint/30",
+      dotClassName: "bg-mint",
+    },
+  } satisfies Record<
+    TodoStatus,
+    { label: string; className: string; dotClassName: string }
+  >;
   const formatTodoDueDate = (dueDate: string | undefined, todayValue: string) =>
     formatDueDate(
       dueDate,
@@ -375,21 +373,21 @@ export function ProjectTodoPanel({
       <div className="flex items-center justify-between px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-            Próximos passos
+            {t("next_steps")}
           </span>
         </div>
 
         <span className="flex h-3 w-3 shrink-0 items-center justify-center">
           {saving && (
             <span
-              aria-label="Salvando tarefas"
+              aria-label={t("saving_tasks")}
               className="h-3 w-3 animate-spin rounded-full border-2 border-accent-dim/30 border-t-accent-bright"
             />
           )}
         </span>
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-mono text-muted">
-            {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
+            {t("pending_count", { count: pendingCount })}
           </span>
 
           <button
@@ -399,13 +397,13 @@ export function ProjectTodoPanel({
             className="focus-ring cursor-pointer inline-flex items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-2.5 py-1.5 text-[10px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-accent/30 disabled:hover:bg-accent/10"
           >
             <span className="text-xs font-semibold">+</span>
-            Nova tarefa
+            {t("new_task")}
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Ocultar próximos passos"
+            aria-label={t("hide_next_steps")}
             className="text-muted cursor-pointer"
           >
             ⌃
@@ -419,7 +417,7 @@ export function ProjectTodoPanel({
           title={saveError}
           className="mx-3.5 mb-2 flex items-center justify-between gap-3 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
         >
-          <span>Não foi possível salvar as alterações.</span>
+          <span>{t("save_changes_failed")}</span>
 
           <button
             type="button"
@@ -427,7 +425,7 @@ export function ProjectTodoPanel({
             disabled={saving}
             className="focus-ring shrink-0 cursor-pointer rounded-btn border border-danger/30 px-2.5 py-1 transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Tentar novamente
+            {t("try_again", { ns: "common" })}
           </button>
         </div>
       )}
@@ -435,7 +433,7 @@ export function ProjectTodoPanel({
       {/* Tarefas */}
       {loading ? (
         <div className="mx-3.5 mb-2 flex items-center justify-center rounded-item border border-outline/50 px-4 py-10">
-          <span className="text-[11px] text-muted">Carregando tarefas...</span>
+          <span className="text-[11px] text-muted">{t("loading_tasks")}</span>
         </div>
       ) : error ? (
         <div
@@ -443,19 +441,17 @@ export function ProjectTodoPanel({
           title={error}
         >
           <p className="text-sm font-medium text-danger">
-            Não foi possível carregar as tarefas
+            {t("load_tasks_failed")}
           </p>
 
-          <p className="mt-1 text-[11px] text-muted">
-            Seus dados não foram modificados.
-          </p>
+          <p className="mt-1 text-[11px] text-muted">{t("data_unchanged")}</p>
 
           <button
             type="button"
             onClick={() => void refresh()}
             className="focus-ring mt-4 cursor-pointer rounded-btn border border-outline/50 px-3 py-1.5 text-[11px] text-muted transition-colors hover:bg-raised hover:text-ink"
           >
-            Tentar novamente
+            {t("try_again", { ns: "common" })}
           </button>
         </div>
       ) : todos.length === 0 ? (
@@ -464,10 +460,10 @@ export function ProjectTodoPanel({
             <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
           </span>
 
-          <p className="text-sm font-medium text-ink">Nenhuma tarefa ainda</p>
+          <p className="text-sm font-medium text-ink">{t("empty_title")}</p>
 
           <p className="mt-1 text-[11px] text-muted">
-            Adicione o primeiro próximo passo deste projeto.
+            {t("empty_description")}
           </p>
 
           <button
@@ -477,7 +473,7 @@ export function ProjectTodoPanel({
             className="focus-ring mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20"
           >
             <span className="text-xs font-semibold">+</span>
-            Criar tarefa
+            {t("create_task")}
           </button>
         </div>
       ) : (
@@ -488,10 +484,12 @@ export function ProjectTodoPanel({
                 <IconCheckCircle aria-hidden="true" className="h-4 w-4" />
               </span>
 
-              <p className="text-sm font-medium text-ink">Tudo concluído</p>
+              <p className="text-sm font-medium text-ink">
+                {t("all_completed_title")}
+              </p>
 
               <p className="mt-1 text-[11px] text-muted">
-                Você concluiu todos os próximos passos deste projeto.
+                {t("all_completed_description")}
               </p>
             </div>
           ) : (
@@ -516,16 +514,14 @@ export function ProjectTodoPanel({
           )}
           {/* Rodapé */}
           <div className="flex items-center justify-between px-3.5 pb-2.5">
-            <span className="text-[10px] text-muted">
-              Use a lista para acompanhar os próximos passos do projeto.
-            </span>
+            <span className="text-[10px] text-muted">{t("footer_hint")}</span>
 
             <button
               type="button"
               className="focus-ring cursor-pointer rounded-btn border border-outline/50 px-2.5 py-1.5 text-[10px] text-muted transition-colors hover:border-accent-dim hover:bg-raised hover:text-ink"
               onClick={() => setShowAllTodos(true)}
             >
-              Ver todas
+              {t("view_all")}
             </button>
           </div>
         </>
@@ -588,14 +584,16 @@ export function ProjectTodoPanel({
 
       {deletingTodo && (
         <ConfirmDialog
-          title="Excluir tarefa?"
+          title={t("delete_task_title")}
           description={
-            <>
-              A tarefa <strong>“{deletingTodo.title}”</strong> será excluída.
-              Esta ação não pode ser desfeita.
-            </>
+            <Trans
+              i18nKey="delete_task_description"
+              ns="todos"
+              values={{ title: deletingTodo.title }}
+              components={{ strong: <strong /> }}
+            />
           }
-          confirmLabel="Excluir"
+          confirmLabel={t("delete", { ns: "common" })}
           variant="danger"
           onConfirm={async () => {
             const nextTodos = todos.filter(

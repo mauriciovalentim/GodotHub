@@ -1,6 +1,7 @@
 import { DatePicker } from "../ui/DatePicker";
 import { Dropdown } from "../ui/Dropdown";
 import { IconMore, IconPencil, IconTrash } from "../../lib/icons";
+import { useTranslation } from "react-i18next";
 
 import type {
   ProjectTodo,
@@ -40,15 +41,6 @@ type ProjectTodoListProps = {
   onDelete: (todo: ProjectTodo) => void;
 };
 
-const areaLabels = {
-  programming: "Programação",
-  art: "Arte",
-  audio: "Áudio",
-  design: "Design",
-  narrative: "Narrativa",
-  other: "Outro",
-} satisfies Record<TodoArea, string>;
-
 export function ProjectTodoList({
   todos,
   today,
@@ -68,6 +60,16 @@ export function ProjectTodoList({
   onEdit,
   onDelete,
 }: ProjectTodoListProps) {
+  const { t, i18n } = useTranslation(["todos", "common"]);
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const areaLabels = {
+    programming: t("area_programming"),
+    art: t("area_art"),
+    audio: t("area_audio"),
+    design: t("area_design"),
+    narrative: t("area_narrative"),
+    other: t("area_other"),
+  } satisfies Record<TodoArea, string>;
   const statusHeader = (
     <button
       type="button"
@@ -75,9 +77,9 @@ export function ProjectTodoList({
       className={`focus-ring cursor-pointer rounded-btn text-center text-[9px] font-medium uppercase tracking-wide text-muted/60 transition-colors hover:bg-raised hover:text-ink ${
         showArea ? "w-28" : "min-w-[88px]"
       }`}
-      title="Ordenar por status"
+      title={t("sort_by_status")}
     >
-      Status{" "}
+      {t("status")}{" "}
       {statusSort === "completed-first"
         ? "↓"
         : statusSort === "todo-first"
@@ -93,9 +95,9 @@ export function ProjectTodoList({
       className={`focus-ring cursor-pointer rounded-btn text-[9px] font-medium uppercase tracking-wide text-muted/60 transition-colors hover:bg-raised hover:text-ink ${
         showArea ? "w-28 text-center" : "w-24 text-center"
       }`}
-      title="Ordenar por prazo"
+      title={t("sort_by_due_date")}
     >
-      Prazo{" "}
+      {t("due_date")}{" "}
       {dueDateSort === "nearest-first"
         ? "↑"
         : dueDateSort === "farthest-first"
@@ -114,12 +116,12 @@ export function ProjectTodoList({
         <span className="w-3.5 shrink-0" />
 
         <span className="min-w-0 flex-1 text-[9px] font-medium uppercase tracking-wide text-muted/60">
-          Tarefa
+          {t("task")}
         </span>
 
         {showArea && (
           <span className="w-28 shrink-0 text-center text-[9px] font-medium uppercase tracking-wide text-muted/60">
-            Área
+            {t("area")}
           </span>
         )}
 
@@ -156,7 +158,7 @@ export function ProjectTodoList({
                 type="button"
                 disabled={disabled}
                 onClick={toggle}
-                aria-label={`Alterar status: ${status.label}`}
+                aria-label={t("change_status", { status: status.label })}
                 aria-expanded={open}
                 className={`focus-ring shrink-0 cursor-pointer rounded-tag border px-2 py-1 text-center text-[10px] transition-all hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 ${status.className} ${
                   showArea ? "w-28" : "min-w-[88px]"
@@ -168,7 +170,7 @@ export function ProjectTodoList({
             items={[
               {
                 key: "todo",
-                label: "A fazer",
+                label: t("status_todo"),
                 leading: (
                   <span
                     aria-hidden="true"
@@ -181,7 +183,7 @@ export function ProjectTodoList({
               },
               {
                 key: "paused",
-                label: "Em pausa",
+                label: t("status_paused"),
                 leading: (
                   <span
                     aria-hidden="true"
@@ -194,7 +196,7 @@ export function ProjectTodoList({
               },
               {
                 key: "in-progress",
-                label: "Em andamento",
+                label: t("status_in_progress"),
                 leading: (
                   <span
                     aria-hidden="true"
@@ -207,7 +209,7 @@ export function ProjectTodoList({
               },
               {
                 key: "done",
-                label: "Concluída",
+                label: t("status_done"),
                 leading: (
                   <span
                     aria-hidden="true"
@@ -237,6 +239,8 @@ export function ProjectTodoList({
           >
             <DatePicker
               value={todo.dueDate ?? ""}
+              locale={locale}
+              clearLabel={t("remove_due_date")}
               disabled={disabled}
               onChange={(dueDate) =>
                 onUpdate({
@@ -249,7 +253,7 @@ export function ProjectTodoList({
               displayValue={
                 <span
                   className={overdue ? "font-medium text-danger" : "text-muted"}
-                  title={overdue ? "Prazo vencido" : undefined}
+                  title={overdue ? t("overdue") : undefined}
                 >
                   {formatDueDate(todo.dueDate, today)}
                 </span>
@@ -270,9 +274,7 @@ export function ProjectTodoList({
               disabled={disabled}
               onClick={() => onToggleCompleted(todo)}
               aria-label={
-                completed
-                  ? "Marcar tarefa como não concluída"
-                  : "Marcar tarefa como concluída"
+                completed ? t("mark_not_completed") : t("mark_completed")
               }
               className="focus-ring flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-btn disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -287,7 +289,7 @@ export function ProjectTodoList({
               type="button"
               onClick={() => onView(todo)}
               title={todo.title}
-              aria-label={`Ver detalhes da tarefa: ${todo.title}`}
+              aria-label={t("view_task_details", { title: todo.title })}
               className={`focus-ring min-w-0 flex-1 cursor-pointer truncate rounded-btn text-left text-[11px] transition-colors ${
                 completed
                   ? "text-muted line-through hover:text-ink"
@@ -325,7 +327,7 @@ export function ProjectTodoList({
                   <button
                     type="button"
                     disabled={disabled}
-                    aria-label="Ações da tarefa"
+                    aria-label={t("task_actions")}
                     aria-expanded={open}
                     onClick={toggle}
                     className={`focus-ring flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-btn transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -340,14 +342,14 @@ export function ProjectTodoList({
                 items={[
                   {
                     key: "edit",
-                    label: "Editar",
+                    label: t("edit"),
                     icon: IconPencil,
                     onClick: () => onEdit(todo),
                     dividerAfter: true,
                   },
                   {
                     key: "delete",
-                    label: "Excluir",
+                    label: t("delete", { ns: "common" }),
                     icon: IconTrash,
                     danger: true,
                     onClick: () => onDelete(todo),

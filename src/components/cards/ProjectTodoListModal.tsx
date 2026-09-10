@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 import { IconCheckCircle } from "../../lib/icons";
 import { ModalHeader } from "../modals/ModalHeader";
@@ -23,6 +24,7 @@ export function ProjectTodoListModal({
   children,
 }: ProjectTodoListModalProps) {
   const completedCount = totalCount - pendingCount;
+  const { t } = useTranslation("todos");
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -65,8 +67,8 @@ export function ProjectTodoListModal({
       >
         <ModalHeader
           icon={<IconCheckCircle className="h-5 w-5 text-accent-bright" />}
-          title="Próximos passos"
-          description="Visualize e gerencie todas as tarefas deste projeto."
+          title={t("next_steps")}
+          description={t("all_tasks_description")}
           onClose={onClose}
           autoFocusBanner={false}
         />
@@ -74,10 +76,9 @@ export function ProjectTodoListModal({
         <div className="flex min-h-0 flex-1 flex-col p-6 pt-4">
           <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
             <span className="text-[11px] font-mono text-muted">
-              {pendingCount} {pendingCount === 1 ? "pendente" : "pendentes"}
+              {t("pending_count", { count: pendingCount })}
               <span className="mx-2 text-muted/40">•</span>
-              {completedCount}{" "}
-              {completedCount === 1 ? "concluída" : "concluídas"}
+              {t("completed_count", { count: completedCount })}
             </span>
 
             <button
@@ -87,7 +88,7 @@ export function ProjectTodoListModal({
               className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-btn border border-accent/30 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/50 hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="text-xs font-semibold">+</span>
-              Nova tarefa
+              {t("new_task")}
             </button>
           </div>
 

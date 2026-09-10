@@ -911,9 +911,9 @@ export function ProjectCard({
                 },
                 {
                   key: "project-todo",
-                  label: "Próximos passos",
+                  label: t("next_steps", { ns: "todos" }),
                   icon: IconCheckCircle,
-                  tooltip: "Próximos passos",
+                  tooltip: t("next_steps", { ns: "todos" }),
                   onClick: () => setShowTodoPanel((current) => !current),
                 },
               ]}

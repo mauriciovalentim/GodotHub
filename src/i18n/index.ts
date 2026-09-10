@@ -12,6 +12,7 @@ import arMAChangelog from './locales/ar-MA/changelog.json'
 import arMAOnboarding from './locales/ar-MA/onboarding.json'
 import arMAVersions from './locales/ar-MA/versions.json'
 import arMADashboard from './locales/ar-MA/dashboard.json'
+import arMATodos from './locales/ar-MA/todos.json'
 
 import enUSNav from './locales/en-US/nav.json'
 import enUSCommon from './locales/en-US/common.json'
@@ -21,6 +22,7 @@ import enUSChangelog from './locales/en-US/changelog.json'
 import enUSOnboarding from './locales/en-US/onboarding.json'
 import enUSVersions from './locales/en-US/versions.json'
 import enUSDashboard from './locales/en-US/dashboard.json'
+import enUSTodos from './locales/en-US/todos.json'
 
 import ptBRNav from './locales/pt-BR/nav.json'
 import ptBRCommon from './locales/pt-BR/common.json'
@@ -30,6 +32,7 @@ import ptBRChangelog from './locales/pt-BR/changelog.json'
 import ptBROnboarding from './locales/pt-BR/onboarding.json'
 import ptBRVersions from './locales/pt-BR/versions.json'
 import ptBRDashboard from './locales/pt-BR/dashboard.json'
+import ptBRTodos from './locales/pt-BR/todos.json'
 
 import esMXNav from "./locales/es-MX/nav.json"
 import esMXCommon from './locales/es-MX/common.json'
@@ -39,6 +42,7 @@ import esMXChangelog from './locales/es-MX/changelog.json'
 import esMXOnboarding from './locales/es-MX/onboarding.json'
 import esMXVersions from './locales/es-MX/versions.json'
 import esMXDashboard from './locales/es-MX/dashboard.json'
+import esMXTodos from './locales/es-MX/todos.json'
 
 import frFRNav from './locales/fr-FR/nav.json'
 import frFRCommon from './locales/fr-FR/common.json'
@@ -48,6 +52,7 @@ import frFRChangelog from './locales/fr-FR/changelog.json'
 import frFROnboarding from './locales/fr-FR/onboarding.json'
 import frFRVersions from './locales/fr-FR/versions.json'
 import frFRDashboard from './locales/fr-FR/dashboard.json'
+import frFRTodos from './locales/fr-FR/todos.json'
 
 import jaJPNav from './locales/ja-JP/nav.json'
 import jaJPCommon from './locales/ja-JP/common.json'
@@ -57,6 +62,7 @@ import jaJPChangelog from './locales/ja-JP/changelog.json'
 import jaJPOnboarding from './locales/ja-JP/onboarding.json'
 import jaJPVersions from './locales/ja-JP/versions.json'
 import jaJPDashboard from './locales/ja-JP/dashboard.json'
+import jaJPTodos from './locales/ja-JP/todos.json'
 
 import zhCNNav from './locales/zh-CN/nav.json'
 import zhCNCommon from './locales/zh-CN/common.json'
@@ -66,6 +72,7 @@ import zhCNChangelog from './locales/zh-CN/changelog.json'
 import zhCNOnboarding from './locales/zh-CN/onboarding.json'
 import zhCNVersions from './locales/zh-CN/versions.json'
 import zhCNDashboard from './locales/zh-CN/dashboard.json'
+import zhCNTodos from './locales/zh-CN/todos.json'
 
 import ruRUNav from './locales/ru-RU/nav.json'
 import ruRuCommon from './locales/ru-RU/common.json'
@@ -75,6 +82,7 @@ import ruRUChangelog from './locales/ru-RU/changelog.json'
 import ruRUOnboarding from './locales/ru-RU/onboarding.json'
 import ruRUVersions from './locales/ru-RU/versions.json'
 import ruRUDashboard from './locales/ru-RU/dashboard.json'
+import ruRUTodos from './locales/ru-RU/todos.json'
 
 
 import viVNChangelog from './locales/vi-VN/changelog.json'
@@ -85,7 +93,7 @@ import viVNNav from './locales/vi-VN/nav.json'
 import viVNOnboarding from './locales/vi-VN/onboarding.json'
 import viVNSettings from './locales/vi-VN/settings.json'
 import viVNVersions from './locales/vi-VN/versions.json'
-
+import viVNTodos from './locales/vi-VN/todos.json'
 
 const arMAResources = {
   nav: arMANav,
@@ -96,6 +104,7 @@ const arMAResources = {
   onboarding: arMAOnboarding,
   versions: arMAVersions,
   dashboard: arMADashboard,
+  todos: arMATodos,
 }
 
 const ptBRResources = {
@@ -107,6 +116,7 @@ const ptBRResources = {
   onboarding: ptBROnboarding,
   versions: ptBRVersions,
   dashboard: ptBRDashboard,
+  todos: ptBRTodos,
 }
 
 const esMXResources = {
@@ -118,6 +128,7 @@ const esMXResources = {
   onboarding: esMXOnboarding,
   versions: esMXVersions,
   dashboard: esMXDashboard,
+  todos: esMXTodos,
 }
 
 const jaJPResources = {
@@ -129,6 +140,7 @@ const jaJPResources = {
   onboarding: jaJPOnboarding,
   versions: jaJPVersions,
   dashboard: jaJPDashboard,
+  todos: jaJPTodos,
 }
 
 const frFRResources = {
@@ -140,6 +152,7 @@ const frFRResources = {
   onboarding: frFROnboarding,
   versions: frFRVersions,
   dashboard: frFRDashboard,
+  todos: frFRTodos,
 }
 
 const zhCNResources = {
@@ -151,6 +164,7 @@ const zhCNResources = {
   onboarding: zhCNOnboarding,
   versions: zhCNVersions,
   dashboard: zhCNDashboard,
+  todos: zhCNTodos,
 }
 
 const viVNResources = {
@@ -162,6 +176,7 @@ const viVNResources = {
   onboarding: viVNOnboarding,
   settings: viVNSettings,
   versions: viVNVersions,
+  todos: viVNTodos,
 }
 
 const resources = {
@@ -174,6 +189,7 @@ const resources = {
     onboarding: enUSOnboarding,
     versions: enUSVersions,
     dashboard: enUSDashboard,
+    todos: enUSTodos,
   },
 
   'pt-BR': ptBRResources,
@@ -200,6 +216,7 @@ const resources = {
     onboarding: ruRUOnboarding,
     versions: ruRUVersions,
     dashboard: ruRUDashboard,
+    todos: ruRUTodos,
   },
 
   'ar-MA': arMAResources,

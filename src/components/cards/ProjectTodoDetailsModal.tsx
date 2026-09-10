@@ -1,12 +1,10 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 import { IconCheckCircle } from "../../lib/icons";
-import type {
-  ProjectTodo,
-  TodoArea,
-} from "../../types/projectTodo";
+import type { ProjectTodo, TodoArea } from "../../types/projectTodo";
 
 import { ModalHeader } from "../modals/ModalHeader";
 
@@ -18,52 +16,10 @@ type ProjectTodoDetailsModalProps = {
   onClose: () => void;
 };
 
-const areaLabels = {
-  programming: "Programação",
-  art: "Arte",
-  audio: "Áudio",
-  design: "Design",
-  narrative: "Narrativa",
-  other: "Outro",
-} satisfies Record<TodoArea, string>;
-
 function toLocalDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
 
   return new Date(year, month - 1, day);
-}
-
-function formatDueDateContext(dueDate: string, overdue: boolean) {
-  const date = toLocalDate(dueDate);
-  const today = new Date();
-  const millisecondsPerDay = 86_400_000;
-
-  const differenceInDays = Math.round(
-    (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) -
-      Date.UTC(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-      )) /
-      millisecondsPerDay,
-  );
-
-  if (differenceInDays === 0) return "Hoje";
-  if (differenceInDays === 1) return "Amanhã";
-
-  if (differenceInDays > 1) {
-    return `Vence em ${differenceInDays} dias`;
-  }
-
-  if (overdue && differenceInDays === -1) {
-    return "Venceu ontem";
-  }
-
-  if (overdue) {
-    return `Venceu há ${Math.abs(differenceInDays)} dias`;
-  }
-
-  return null;
 }
 
 export function ProjectTodoDetailsModal({
@@ -73,13 +29,59 @@ export function ProjectTodoDetailsModal({
   overdue,
   onClose,
 }: ProjectTodoDetailsModalProps) {
-      const fullDueDateLabel = todo.dueDate
-    ? new Intl.DateTimeFormat("pt-BR", {
+  const { t, i18n } = useTranslation(["todos", "common"]);
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+
+  const areaLabels = {
+    programming: t("area_programming"),
+    art: t("area_art"),
+    audio: t("area_audio"),
+    design: t("area_design"),
+    narrative: t("area_narrative"),
+    other: t("area_other"),
+  } satisfies Record<TodoArea, string>;
+  function formatDueDateContext(dueDate: string, overdue: boolean) {
+    const date = toLocalDate(dueDate);
+    const today = new Date();
+    const millisecondsPerDay = 86_400_000;
+
+    const differenceInDays = Math.round(
+      (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) -
+        Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) /
+        millisecondsPerDay,
+    );
+
+    if (differenceInDays === 0) {
+      return t("today");
+    }
+
+    if (differenceInDays === 1) {
+      return t("tomorrow");
+    }
+
+    if (differenceInDays > 1) {
+      return t("due_in_days", { count: differenceInDays });
+    }
+
+    if (overdue && differenceInDays === -1) {
+      return t("overdue_yesterday");
+    }
+
+    if (overdue) {
+      return t("overdue_days", {
+        count: Math.abs(differenceInDays),
+      });
+    }
+
+    return null;
+  }
+  const fullDueDateLabel = todo.dueDate
+    ? new Intl.DateTimeFormat(locale, {
         day: "numeric",
         month: "long",
         year: "numeric",
       }).format(toLocalDate(todo.dueDate))
-    : "Sem prazo";
+    : t("no_due_date");
 
   const dueDateContextLabel = todo.dueDate
     ? formatDueDateContext(todo.dueDate, overdue)
@@ -124,30 +126,28 @@ export function ProjectTodoDetailsModal({
         onClick={(event) => event.stopPropagation()}
       >
         <ModalHeader
-          icon={
-            <IconCheckCircle className="h-5 w-5 text-accent-bright" />
-          }
+          icon={<IconCheckCircle className="h-5 w-5 text-accent-bright" />}
           title={todo.title}
           titleClassName="line-clamp-2 leading-tight"
-          description="Detalhes da tarefa"
+          description={t("task_details")}
           onClose={onClose}
           autoFocusBanner={false}
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6 pt-4 flex flex-col gap-4">
-         <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="pl-3 text-xs font-medium text-muted">
-              Área
+              {t("area")}
             </span>
 
             <span className="w-fit rounded-tag border border-outline/50 bg-raised px-3 py-1.5 text-xs font-medium text-ink">
               {areaLabels[todo.area ?? "other"]}
             </span>
           </div>
-          
-         <div className="flex flex-col gap-1.5">
+
+          <div className="flex flex-col gap-1.5">
             <span className="pl-3 text-xs font-medium text-muted">
-              Status
+              {t("status")}
             </span>
 
             <span
@@ -157,26 +157,24 @@ export function ProjectTodoDetailsModal({
             </span>
           </div>
 
-                    
-
           <div className="flex flex-col gap-1.5">
             <span className="pl-3 text-xs font-medium text-muted">
-              Descrição
+              {t("description")}
             </span>
 
             <div className="min-h-20 whitespace-pre-wrap break-words rounded-item border border-outline/50 bg-overlay px-3.5 py-2.5 text-sm text-ink">
               {todo.description || (
-                <span className="text-muted">Sem descrição</span>
+                <span className="text-muted">{t("no_description")}</span>
               )}
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <span className="pl-3 text-xs font-medium text-muted">
-              Prazo
+              {t("due_date")}
             </span>
 
-                        <div
+            <div
               className={`rounded-item border border-outline/50 bg-overlay px-3.5 py-2.5 ${
                 !todo.dueDate
                   ? "text-muted"
@@ -211,7 +209,7 @@ export function ProjectTodoDetailsModal({
             onClick={onClose}
             className="focus-ring cursor-pointer rounded-btn border border-outline/50 px-4 py-2.5 text-sm text-muted transition-colors hover:border-accent-dim hover:bg-raised hover:text-ink"
           >
-            Fechar
+            {t("close", { ns: "common" })}
           </motion.button>
         </div>
       </motion.div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ModalHeader } from "../modals/ModalHeader";
 import { IconCheckCircle, IconPencil } from "../../lib/icons";
 
@@ -17,24 +18,26 @@ type ProjectTodoModalProps = {
   todo?: ProjectTodo;
 };
 
-const areaOptions: Array<{
-  value: TodoArea;
-  label: string;
-}> = [
-  { value: "programming", label: "Programação" },
-  { value: "art", label: "Arte" },
-  { value: "audio", label: "Áudio" },
-  { value: "design", label: "Design" },
-  { value: "narrative", label: "Narrativa" },
-  { value: "other", label: "Outro" },
-];
-
 export function ProjectTodoModal({
   onClose,
   onSubmit,
   todo,
 }: ProjectTodoModalProps) {
   const editing = !!todo;
+  const { t, i18n } = useTranslation(["todos", "common"]);
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+
+  const areaOptions: Array<{
+    value: TodoArea;
+    label: string;
+  }> = [
+    { value: "programming", label: t("area_programming") },
+    { value: "art", label: t("area_art") },
+    { value: "audio", label: t("area_audio") },
+    { value: "design", label: t("area_design") },
+    { value: "narrative", label: t("area_narrative") },
+    { value: "other", label: t("area_other") },
+  ];
 
   const [title, setTitle] = useState(todo?.title ?? "");
   const [description, setDescription] = useState(todo?.description ?? "");
@@ -140,11 +143,9 @@ export function ProjectTodoModal({
               <IconCheckCircle className="w-5 h-5 text-accent-bright" />
             )
           }
-          title={editing ? "Editar tarefa" : "Nova tarefa"}
+          title={editing ? t("edit_task") : t("new_task")}
           description={
-            editing
-              ? "Atualize as informações desta tarefa."
-              : "Adicione um próximo passo para este projeto."
+            editing ? t("edit_task_description") : t("new_task_description")
           }
           onClose={onClose}
           autoFocusBanner={false}
@@ -154,21 +155,23 @@ export function ProjectTodoModal({
           {/* Título */}
           <div className="flex flex-col gap-0.5">
             <label className="pl-3 text-xs font-medium text-muted">
-              Título
+              {t("title")}
             </label>
 
             <input
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Ex.: Criar menu principal"
+              placeholder={t("title_placeholder")}
               className="focus-ring bg-overlay border border-outline/50 focus:border-accent-dim rounded-item px-3.5 py-2.5 text-sm font-mono text-ink placeholder:text-muted/70 transition-colors"
             />
           </div>
 
           {/* Área */}
           <div className="flex flex-col gap-2">
-            <label className="pl-3 text-xs font-medium text-muted">Área</label>
+            <label className="pl-3 text-xs font-medium text-muted">
+              {t("area")}
+            </label>
 
             <div className="flex flex-wrap gap-1.5">
               {areaOptions.map((option) => (
@@ -187,7 +190,7 @@ export function ProjectTodoModal({
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="pl-3 text-xs font-medium text-muted">
-              Status
+              {t("status")}
             </label>
 
             <div className="flex flex-wrap gap-1.5">
@@ -196,7 +199,7 @@ export function ProjectTodoModal({
                 onClick={() => setStatus("todo")}
                 className={optionButtonClass(status === "todo")}
               >
-                A fazer
+                {t("status_todo")}
               </button>
 
               <button
@@ -204,7 +207,7 @@ export function ProjectTodoModal({
                 onClick={() => setStatus("paused")}
                 className={optionButtonClass(status === "paused")}
               >
-                Em pausa
+                {t("status_paused")}
               </button>
 
               <button
@@ -212,14 +215,14 @@ export function ProjectTodoModal({
                 onClick={() => setStatus("in_progress")}
                 className={optionButtonClass(status === "in_progress")}
               >
-                Em andamento
+                {t("status_in_progress")}
               </button>
               <button
                 type="button"
                 onClick={() => setStatus("done")}
                 className={optionButtonClass(status === "done")}
               >
-                Concluída
+                {t("status_done")}
               </button>
             </div>
           </div>
@@ -227,15 +230,15 @@ export function ProjectTodoModal({
           {/* Descrição */}
           <div className="flex flex-col gap-0.5">
             <label className="pl-3 text-xs font-medium text-muted">
-              Descrição{" "}
-              <span className="font-normal text-muted/60">(opcional)</span>
+              {t("description")}{" "}
+              <span className="font-normal text-muted/60">{t("optional")}</span>
             </label>
 
             <textarea
               rows={4}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Adicione mais detalhes sobre o que precisa ser feito..."
+              placeholder={t("description_placeholder")}
               className="focus-ring bg-overlay border border-outline/50 focus:border-accent-dim rounded-item px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/70 transition-colors resize-none"
             />
           </div>
@@ -243,17 +246,18 @@ export function ProjectTodoModal({
           {/* Prazo */}
           <div className="flex flex-col gap-0.5">
             <label className="pl-3 text-xs font-medium text-muted">
-              Prazo{" "}
-              <span className="font-normal text-muted/60">(opcional)</span>
+              {t("due_date")}{" "}
+              <span className="font-normal text-muted/60">{t("optional")}</span>
             </label>
 
             <DatePicker
               value={dueDate}
+              locale={locale}
               onChange={setDueDate}
-              placeholder="Sem prazo"
-              clearLabel="Remover prazo"
+              placeholder={t("no_due_date")}
+              clearLabel={t("remove_due_date")}
               markPastDates
-              pastDateMessage="Este prazo já venceu"
+              pastDateMessage={t("past_due_date")}
             />
           </div>
         </div>
@@ -263,7 +267,7 @@ export function ProjectTodoModal({
             role="alert"
             className="mx-6 rounded-item border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger"
           >
-            Não foi possível salvar a tarefa. Tente novamente.
+            {t("save_task_failed")}
           </div>
         )}
 
@@ -276,7 +280,7 @@ export function ProjectTodoModal({
             onClick={onClose}
             className="focus-ring cursor-pointer px-4 py-2.5 rounded-btn border border-outline/50 hover:border-accent-dim hover:bg-raised text-sm text-muted hover:text-ink transition-colors"
           >
-            Cancelar
+            {t("cancel", { ns: "common" })}
           </motion.button>
 
           <motion.button
@@ -288,10 +292,10 @@ export function ProjectTodoModal({
             className="focus-ring cursor-pointer px-4 py-2.5 rounded-btn bg-accent text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting
-              ? "Salvando..."
+              ? t("saving", { ns: "common" })
               : editing
-                ? "Salvar alterações"
-                : "Adicionar tarefa"}
+                ? t("save_changes", { ns: "common" })
+                : t("add_task")}
           </motion.button>
         </div>
       </motion.div>
