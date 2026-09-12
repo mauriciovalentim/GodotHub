@@ -114,6 +114,7 @@ const DEFAULTS: AppSettings = {
   card_view_overrides: {},
   customize_view_enabled: false,
   git_worktrees_enabled: false,
+  project_todos_enabled: false,
 }
 
 interface SettingsContextValue {

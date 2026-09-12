@@ -320,5 +320,7 @@
   "landing_versions": "الإصدارات",
   "landing_news": "أخبار Godot",
   "git_worktrees_label": "Git Worktrees",
-  "git_worktrees_desc": "Show the Worktrees section in the Git sidebar. Worktrees let you check out multiple branches simultaneously in separate directories."
+  "git_worktrees_desc": "Show the Worktrees section in the Git sidebar. Worktrees let you check out multiple branches simultaneously in separate directories.",
+  "project_todos_label": "Project Next Steps",
+  "project_todos_desc": "Show the Next Steps section on project cards, allowing you to track the upcoming tasks for each project."
 }

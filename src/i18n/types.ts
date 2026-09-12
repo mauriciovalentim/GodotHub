@@ -1188,7 +1188,9 @@ export type settingsKeys =
   | 'customize_view_label'
   | 'customize_view_desc'
   | 'git_worktrees_label'
-  | 'git_worktrees_desc';
+  | 'git_worktrees_desc'
+  | 'project_todos_label'
+  | 'project_todos_desc';
 
 /** Keys from todos.json */
 export type todosKeys = 
@@ -2478,6 +2480,8 @@ export type TranslationKey =
   | 'settings:customize_view_desc'
   | 'settings:git_worktrees_label'
   | 'settings:git_worktrees_desc'
+  | 'settings:project_todos_label'
+  | 'settings:project_todos_desc'
   | 'todos:next_steps'
   | 'todos:all_tasks_description'
   | 'todos:saving_tasks'

@@ -317,5 +317,7 @@
   "landing_versions": "Versões",
   "landing_news": "Notícias do Godot",
   "git_worktrees_label": "Git Worktrees",
-  "git_worktrees_desc": "Mostra a seção Worktrees na barra lateral do Git. Worktrees permitem usar várias branches ao mesmo tempo em diretórios separados."
+  "git_worktrees_desc": "Mostra a seção Worktrees na barra lateral do Git. Worktrees permitem usar várias branches ao mesmo tempo em diretórios separados.",
+  "project_todos_label": "Próximos passos dos projetos",
+  "project_todos_desc": "Mostra a seção Próximos passos nos cartões de projeto, permitindo acompanhar as próximas tarefas de cada projeto."
 }

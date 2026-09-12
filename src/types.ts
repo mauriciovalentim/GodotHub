@@ -441,6 +441,7 @@ export interface AppSettings {
   card_view_overrides: Record<string, Partial<CardViewSettings>>
   customize_view_enabled: boolean
   git_worktrees_enabled: boolean
+  project_todos_enabled: boolean
 }
 
 export interface CardViewSettings {

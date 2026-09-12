@@ -317,5 +317,7 @@
   "landing_versions": "バージョン",
   "landing_news": "Godot ニュース",
   "git_worktrees_label": "Git ワークツリー",
-  "git_worktrees_desc": "Git サイドバーにワークツリーのセクションを表示します。ワークツリーを使うと、複数のブランチを別々のディレクトリに同時にチェックアウトできます。"
+  "git_worktrees_desc": "Git サイドバーにワークツリーのセクションを表示します。ワークツリーを使うと、複数のブランチを別々のディレクトリに同時にチェックアウトできます。",
+  "project_todos_label": "Project Next Steps",
+  "project_todos_desc": "Show the Next Steps section on project cards, allowing you to track the upcoming tasks for each project."
 }

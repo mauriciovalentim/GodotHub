@@ -112,6 +112,7 @@ export function ProjectCard({
   const { t } = useTranslation("common");
   const { settings } = useSettings();
   const cardSettings = getCardViewSettings(settings, viewMode);
+  const projectTodosEnabled = settings.project_todos_enabled;
   const resolutionEpoch = useProjectResolutionEpoch();
   const [icon, setIcon] = useState<string | null>(() =>
     getCachedProjectIcon(project.path),
@@ -138,6 +139,12 @@ export function ProjectCard({
   const [pinFocused, setPinFocused] = useState(false);
   const [showTodoPanel, setShowTodoPanel] = useState(false);
   const [todoPanelLoaded, setTodoPanelLoaded] = useState(false);
+  useEffect(() => {
+    if (projectTodosEnabled) return;
+
+    setTodoPanelLoaded(false);
+    setShowTodoPanel(false);
+  }, [projectTodosEnabled]);
   const editInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
@@ -284,6 +291,8 @@ export function ProjectCard({
     <div>
       <div
         onClick={(event) => {
+          if (!projectTodosEnabled) return;
+
           const target = event.target as HTMLElement;
 
           const interactiveElement = target.closest(
@@ -297,9 +306,9 @@ export function ProjectCard({
         }}
         onMouseEnter={() => setCardHovered(true)}
         onMouseLeave={() => setCardHovered(false)}
-        className={`group relative cursor-pointer flex items-end gap-3.5 border p-3.5 transition-all duration-150 ${
-          showTodoPanel ? "rounded-t-item" : "rounded-item"
-        } ${
+        className={`group relative flex items-end gap-3.5 border p-3.5 transition-all duration-150 ${
+          projectTodosEnabled ? "cursor-pointer" : ""
+        } ${showTodoPanel ? "rounded-t-item" : "rounded-item"} ${
           selected
             ? "bg-accent/5 border-accent ring-1 ring-accent/30"
             : "bg-overlay border-outline/50 hover:bg-raised hover:border-accent-dim/60"
@@ -909,13 +918,17 @@ export function ProjectCard({
                   onClick: () =>
                     api.openTerminal(project.path).catch((e) => alert(e)),
                 },
-                {
-                  key: "project-todo",
-                  label: t("next_steps", { ns: "todos" }),
-                  icon: IconCheckCircle,
-                  tooltip: t("next_steps", { ns: "todos" }),
-                  onClick: () => setShowTodoPanel((current) => !current),
-                },
+                ...(projectTodosEnabled
+                  ? [
+                      {
+                        key: "project-todo",
+                        label: t("next_steps", { ns: "todos" }),
+                        icon: IconCheckCircle,
+                        tooltip: t("next_steps", { ns: "todos" }),
+                        onClick: () => setShowTodoPanel((current) => !current),
+                      },
+                    ]
+                  : []),
               ]}
               items={[
                 {
@@ -1067,7 +1080,7 @@ export function ProjectCard({
       </div>
 
       <AnimatePresence initial={false}>
-        {showTodoPanel && (
+        {projectTodosEnabled && showTodoPanel && (
           <motion.div
             key="project-todo-panel"
             initial={{ height: 0, opacity: 0 }}
