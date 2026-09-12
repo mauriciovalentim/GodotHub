@@ -441,6 +441,9 @@ export interface AppSettings {
   card_view_overrides: Record<string, Partial<CardViewSettings>>
   customize_view_enabled: boolean
   git_worktrees_enabled: boolean
+  fixed_sidebar_resize_knob: boolean
+  desktop_notifications_enabled: boolean
+  colored_titlebar_buttons: boolean
 }
 
 export interface CardViewSettings {

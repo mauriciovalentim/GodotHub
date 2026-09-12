@@ -22,15 +22,6 @@ import enUSOnboarding from './locales/en-US/onboarding.json'
 import enUSVersions from './locales/en-US/versions.json'
 import enUSDashboard from './locales/en-US/dashboard.json'
 
-import ptBRNav from './locales/pt-BR/nav.json'
-import ptBRCommon from './locales/pt-BR/common.json'
-import ptBRSettings from './locales/pt-BR/settings.json'
-import ptBRGit from './locales/pt-BR/git.json'
-import ptBRChangelog from './locales/pt-BR/changelog.json'
-import ptBROnboarding from './locales/pt-BR/onboarding.json'
-import ptBRVersions from './locales/pt-BR/versions.json'
-import ptBRDashboard from './locales/pt-BR/dashboard.json'
-
 import esMXNav from "./locales/es-MX/nav.json"
 import esMXCommon from './locales/es-MX/common.json'
 import esMXSettings from './locales/es-MX/settings.json'
@@ -58,14 +49,14 @@ import jaJPOnboarding from './locales/ja-JP/onboarding.json'
 import jaJPVersions from './locales/ja-JP/versions.json'
 import jaJPDashboard from './locales/ja-JP/dashboard.json'
 
-import zhCNNav from './locales/zh-CN/nav.json'
-import zhCNCommon from './locales/zh-CN/common.json'
-import zhCNSettings from './locales/zh-CN/settings.json'
-import zhCNGit from './locales/zh-CN/git.json'
-import zhCNChangelog from './locales/zh-CN/changelog.json'
-import zhCNOnboarding from './locales/zh-CN/onboarding.json'
-import zhCNVersions from './locales/zh-CN/versions.json'
-import zhCNDashboard from './locales/zh-CN/dashboard.json'
+import ptBRNav from './locales/pt-BR/nav.json'
+import ptBRCommon from './locales/pt-BR/common.json'
+import ptBRSettings from './locales/pt-BR/settings.json'
+import ptBRGit from './locales/pt-BR/git.json'
+import ptBRChangelog from './locales/pt-BR/changelog.json'
+import ptBROnboarding from './locales/pt-BR/onboarding.json'
+import ptBRVersions from './locales/pt-BR/versions.json'
+import ptBRDashboard from './locales/pt-BR/dashboard.json'
 
 import ruRUNav from './locales/ru-RU/nav.json'
 import ruRuCommon from './locales/ru-RU/common.json'
@@ -76,7 +67,6 @@ import ruRUOnboarding from './locales/ru-RU/onboarding.json'
 import ruRUVersions from './locales/ru-RU/versions.json'
 import ruRUDashboard from './locales/ru-RU/dashboard.json'
 
-
 import viVNChangelog from './locales/vi-VN/changelog.json'
 import viVNCommon from './locales/vi-VN/common.json'
 import viVNDashboard from './locales/vi-VN/dashboard.json'
@@ -86,85 +76,27 @@ import viVNOnboarding from './locales/vi-VN/onboarding.json'
 import viVNSettings from './locales/vi-VN/settings.json'
 import viVNVersions from './locales/vi-VN/versions.json'
 
-
-const arMAResources = {
-  nav: arMANav,
-  common: arMACommon,
-  settings: arMASettings,
-  git: arMAGit,
-  changelog: arMAChangelog,
-  onboarding: arMAOnboarding,
-  versions: arMAVersions,
-  dashboard: arMADashboard,
-}
-
-const ptBRResources = {
-  nav: ptBRNav,
-  common: ptBRCommon,
-  settings: ptBRSettings,
-  git: ptBRGit,
-  changelog: ptBRChangelog,
-  onboarding: ptBROnboarding,
-  versions: ptBRVersions,
-  dashboard: ptBRDashboard,
-}
-
-const esMXResources = {
-  nav: esMXNav,
-  common: esMXCommon,
-  settings: esMXSettings,
-  git: esMXGit,
-  changelog: esMXChangelog,
-  onboarding: esMXOnboarding,
-  versions: esMXVersions,
-  dashboard: esMXDashboard,
-}
-
-const jaJPResources = {
-  nav: jaJPNav,
-  common: jaJPCommon,
-  settings: jaJPSettings,
-  git: jaJPGit,
-  changelog: jaJPChangelog,
-  onboarding: jaJPOnboarding,
-  versions: jaJPVersions,
-  dashboard: jaJPDashboard,
-}
-
-const frFRResources = {
-  nav: frFRNav,
-  common: frFRCommon,
-  settings: frFRSettings,
-  git: frFRGit,
-  changelog: frFRChangelog,
-  onboarding: frFROnboarding,
-  versions: frFRVersions,
-  dashboard: frFRDashboard,
-}
-
-const zhCNResources = {
-  nav: zhCNNav,
-  common: zhCNCommon,
-  settings: zhCNSettings,
-  git: zhCNGit,
-  changelog: zhCNChangelog,
-  onboarding: zhCNOnboarding,
-  versions: zhCNVersions,
-  dashboard: zhCNDashboard,
-}
-
-const viVNResources = {
-  changelog: viVNChangelog,
-  common: viVNCommon,
-  dashboard: viVNDashboard,
-  git: viVNGit,
-  nav: viVNNav,
-  onboarding: viVNOnboarding,
-  settings: viVNSettings,
-  versions: viVNVersions,
-}
+import zhCNNav from './locales/zh-CN/nav.json'
+import zhCNCommon from './locales/zh-CN/common.json'
+import zhCNSettings from './locales/zh-CN/settings.json'
+import zhCNGit from './locales/zh-CN/git.json'
+import zhCNChangelog from './locales/zh-CN/changelog.json'
+import zhCNOnboarding from './locales/zh-CN/onboarding.json'
+import zhCNVersions from './locales/zh-CN/versions.json'
+import zhCNDashboard from './locales/zh-CN/dashboard.json'
 
 const resources = {
+  'ar-MA': {
+    nav: arMANav,
+    common: arMACommon,
+    settings: arMASettings,
+    git: arMAGit,
+    changelog: arMAChangelog,
+    onboarding: arMAOnboarding,
+    versions: arMAVersions,
+    dashboard: arMADashboard,
+  },
+  
   'en-US': {
     nav: enUSNav,
     common: enUSCommon,
@@ -175,21 +107,50 @@ const resources = {
     versions: enUSVersions,
     dashboard: enUSDashboard,
   },
-
-  'pt-BR': ptBRResources,
-  pt: ptBRResources,
-
-  'es-MX': esMXResources,
-  es: esMXResources,
-
-  'zh-CN': zhCNResources,
-  zh: zhCNResources,
-
-  'ja-JP': jaJPResources,
-  ja: jaJPResources,
   
-  'fr-FR': frFRResources,
-  fr: frFRResources,
+  'es-MX': {
+    nav: esMXNav,
+    common: esMXCommon,
+    settings: esMXSettings,
+    git: esMXGit,
+    changelog: esMXChangelog,
+    onboarding: esMXOnboarding,
+    versions: esMXVersions,
+    dashboard: esMXDashboard,
+  },
+  
+  'fr-FR': {
+    nav: frFRNav,
+    common: frFRCommon,
+    settings: frFRSettings,
+    git: frFRGit,
+    changelog: frFRChangelog,
+    onboarding: frFROnboarding,
+    versions: frFRVersions,
+    dashboard: frFRDashboard,
+  },
+  
+  'ja-JP': {
+    nav: jaJPNav,
+    common: jaJPCommon,
+    settings: jaJPSettings,
+    git: jaJPGit,
+    changelog: jaJPChangelog,
+    onboarding: jaJPOnboarding,
+    versions: jaJPVersions,
+    dashboard: jaJPDashboard,
+  },
+  
+  'pt-BR': {
+    nav: ptBRNav,
+    common: ptBRCommon,
+    settings: ptBRSettings,
+    git: ptBRGit,
+    changelog: ptBRChangelog,
+    onboarding: ptBROnboarding,
+    versions: ptBRVersions,
+    dashboard: ptBRDashboard,
+  },
   
   'ru-RU': {
     nav: ruRUNav,
@@ -201,12 +162,28 @@ const resources = {
     versions: ruRUVersions,
     dashboard: ruRUDashboard,
   },
-
-  'ar-MA': arMAResources,
-  ar: arMAResources,
   
-  'vi-VN': viVNResources,
-  vi: viVNResources,
+  'vi-VN': {
+  changelog: viVNChangelog,
+  common: viVNCommon,
+  dashboard: viVNDashboard,
+  git: viVNGit,
+  nav: viVNNav,
+  onboarding: viVNOnboarding,
+  settings: viVNSettings,
+  versions: viVNVersions,
+},
+
+'zh-CN': {
+  nav: zhCNNav,
+  common: zhCNCommon,
+  settings: zhCNSettings,
+  git: zhCNGit,
+  changelog: zhCNChangelog,
+  onboarding: zhCNOnboarding,
+  versions: zhCNVersions,
+  dashboard: zhCNDashboard,
+}
 }
 
 // The language setting stores the literal 'system' choice, and earlier builds

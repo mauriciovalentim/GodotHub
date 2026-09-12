@@ -1,44 +1,31 @@
-import { useCallback, useMemo, useState, type ReactNode, createContext, useContext } from 'react'
-import { AnimatePresence, motion, type Transition } from 'framer-motion'
 import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  KeyboardSensor,
-  useDroppable,
-  useSensor,
-  useSensors,
-  closestCenter,
-  type DragStartEvent,
-  type DragEndEvent,
-} from '@dnd-kit/core'
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { AnimatePresence, motion, type Transition } from 'framer-motion'
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
-  arrayMove,
-  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { useDroppable } from '@dnd-kit/core'
 import { AnimatedNumber } from '../reusables/AnimatedNumber'
 import { useTranslation } from 'react-i18next'
 import { IconChevronDown, IconNode, IconPin } from '../../lib/icons'
-import { DragHandle } from '../reusables/DragHandle'
 import { isReducedMotion } from '../../lib/appearance'
+import { UNCATEGORIZED_KEY } from '../../lib/projectDrag'
+import { AUTO_SCROLL_CONFIG, DRAG_FEEL } from '../../lib/dragFeel'
+import { useProjectDnd } from '../../hooks/useProjectDnd'
+import {
+  ProjectDragOverlay,
+  ProjectDropLine,
+  SortableProjectItem,
+} from '../dnd/ProjectDnd'
 import type { Category, Project } from '../../types'
 
 const DEFAULT_ANIMATION_THRESHOLD = 20
-const UNCATEGORIZED = '__uncategorized__'
-
-export interface PinChange {
-  id: string
-  pinned: boolean
-}
-
-export interface CategoryChange {
-  id: string
-  category: string
-}
+const UNCATEGORIZED = UNCATEGORIZED_KEY
 
 interface ProjectCardListProps {
   projects: Project[]
@@ -49,74 +36,11 @@ interface ProjectCardListProps {
   categories?: Category[]
   categoriesEnabled?: boolean
   onReorder?: (orderedIds: string[]) => Promise<void>
-  onMoveProject?: (id: string, category: string, destOrderedIds: string[]) => Promise<void>
-}
-
-interface DragContext {
-  activeDragId: string | null
-  categoryMap: Map<string, string>
-}
-
-const DragStateContext = createContext<DragContext>({
-  activeDragId: null,
-  categoryMap: new Map(),
-})
-
-function SortableProjectCard({
-  id,
-  disabled,
-  children,
-}: {
-  id: string
-  disabled?: boolean
-  children: React.ReactNode
-}) {
-  const {
-    setNodeRef,
-    setActivatorNodeRef,
-    attributes,
-    listeners,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id, disabled })
-
-  const { activeDragId, categoryMap } = useContext(DragStateContext)
-
-  const activeCat = activeDragId ? categoryMap.get(activeDragId) : null
-  const thisCat = categoryMap.get(id)
-  const isCrossCategoryDrag = activeDragId != null && activeCat != null && thisCat != null && activeCat !== thisCat
-
-  const isSameCategory = !isCrossCategoryDrag && activeDragId != null && thisCat === activeCat
-  const suppressTransform = isCrossCategoryDrag || isSameCategory
-
-  const style: React.CSSProperties = {
-    transform: suppressTransform ? undefined : CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.35 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group/drag relative transition-[box-shadow,border-color] duration-200 rounded-item ${
-        isDragging ? 'shadow-lg shadow-accent/8 ring-1 ring-accent/20' : ''
-      }`}
-    >
-      <DragHandle
-        ref={setActivatorNodeRef}
-        attributes={attributes}
-        listeners={listeners}
-        isDragging={isDragging}
-        disabled={disabled}
-        className="absolute top-1/2 -translate-y-1/2 "
-      />
-      {children}
-
-    </div>
-  )
+  onMoveProject?: (
+    id: string,
+    category: string,
+    destOrderedIds: string[],
+  ) => Promise<void>
 }
 
 function CategorySection({
@@ -173,9 +97,11 @@ function CategorySection({
       </button>
 
       <div
-        className={`grid ${disableAnimation ? '' : 'transition-[grid-template-rows] duration-200 ease-out'} ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
+        className={`grid ${
+          disableAnimation
+            ? ''
+            : 'transition-[grid-template-rows] duration-200 ease-out'
+        } ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
       >
         <div className="overflow-hidden min-h-0">
           <div
@@ -187,12 +113,16 @@ function CategorySection({
             {children}
             {isEmpty && !isOver && (
               <div className="flex items-center justify-center py-6">
-                <span className="text-xs text-muted/40 select-none">{t('empty_category')}</span>
+                <span className="text-xs text-muted/40 select-none">
+                  {t('empty_category')}
+                </span>
               </div>
             )}
             {isEmpty && isOver && (
               <div className="flex items-center justify-center py-6">
-                <span className="text-xs text-accent-bright font-medium select-none">{t('release_to_drop')}</span>
+                <span className="text-xs text-accent-bright font-medium select-none">
+                  {t('release_to_drop')}
+                </span>
               </div>
             )}
           </div>
@@ -215,34 +145,12 @@ export function ProjectCardList({
 }: ProjectCardListProps) {
   const { t } = useTranslation('common')
 
-  const animateList =
-    totalCount <= animationThreshold && !isReducedMotion()
+  const animateList = totalCount <= animationThreshold && !isReducedMotion()
   const layoutTransition: Transition = {
     type: 'spring',
     stiffness: 350,
     damping: 30,
     mass: 0.8,
-  }
-
-  const cardFor = (p: Project) => {
-    const card = renderCard(p)
-    if (!animateList) {
-      return <div key={p.id} className="min-w-0">{card}</div>
-    }
-    return (
-      <motion.div
-        key={p.id}
-        layout
-        layoutId={p.id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, transition: { duration: 0.12 } }}
-        transition={layoutTransition}
-        className="min-w-0"
-      >
-        {card}
-      </motion.div>
-    )
   }
 
   const showPinnedSection = projects.some((p) => p.pinned)
@@ -253,122 +161,117 @@ export function ProjectCardList({
     ? projects.filter((p) => !p.pinned)
     : projects
 
-  const categoryGroups = useMemo(() => {
-    if (!categoriesEnabled || categories.length === 0) {
-      return null
-    }
-    const groups = new Map<string, Project[]>()
+  const grouped = categoriesEnabled && categories.length > 0
+
+  const groups = useMemo(() => {
+    const map = new Map<string, Project[]>()
     for (const p of unpinnedProjects) {
-      const cat = p.category || UNCATEGORIZED
-      if (!groups.has(cat)) groups.set(cat, [])
-      groups.get(cat)!.push(p)
-    }
-    return groups
-  }, [categoriesEnabled, categories, unpinnedProjects])
-
-  // --- Drag and Drop ---
-  const isDndEnabled = categoriesEnabled && Boolean(onReorder)
-
-  const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
-
-  const [activeDragId, setActiveDragId] = useState<string | null>(null)
-
-  const projectsById = useMemo(
-    () => new Map(projects.map((p) => [p.id, p])),
-    [projects],
-  )
-
-  const sortableIds = useMemo(
-    () => unpinnedProjects.map((p) => p.id),
-    [unpinnedProjects],
-  )
-
-  const categoryMap = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const p of unpinnedProjects) {
-      map.set(p.id, p.category || UNCATEGORIZED)
+      const key = p.category || UNCATEGORIZED
+      const list = map.get(key)
+      if (list) list.push(p)
+      else map.set(key, [p])
     }
     return map
   }, [unpinnedProjects])
 
-  const handleDragStart = useCallback((e: DragStartEvent) => {
-    setActiveDragId(e.active.id as string)
-  }, [])
+  /** Category keys in the order they are rendered, including stray ones. */
+  const orderedCategoryKeys = useMemo(() => {
+    const keys: string[] = []
+    for (const cat of categories) {
+      if (groups.has(cat.name)) keys.push(cat.name)
+    }
+    if (groups.has(UNCATEGORIZED)) keys.push(UNCATEGORIZED)
+    for (const key of groups.keys()) {
+      if (!keys.includes(key)) keys.push(key)
+    }
+    return keys
+  }, [categories, groups])
 
-  const handleDragEnd = useCallback(
-    async (e: DragEndEvent) => {
-      const { active, over } = e
-      setActiveDragId(null)
-      if (!over || active.id === over.id) return
+  /** Draggable projects in the exact order they appear on screen. */
+  const sortableProjects = useMemo(() => {
+    if (!grouped) return unpinnedProjects
+    const ordered: Project[] = []
+    for (const key of orderedCategoryKeys) {
+      ordered.push(...(groups.get(key) ?? []))
+    }
+    return ordered
+  }, [grouped, unpinnedProjects, orderedCategoryKeys, groups])
 
-      const draggedId = active.id as string
-      const targetId = over.id as string
-
-      const draggedProject = projectsById.get(draggedId)
-      if (!draggedProject) return
-
-      if (!onReorder) return
-
-      // Check if dropped onto a category droppable (empty category)
-      const catDropMatch = targetId.match(/^list-cat-(.+)$/) 
-      if (catDropMatch && onMoveProject) {
-        const catId = catDropMatch[1]
-        const targetCat = catId === 'uncategorized' 
-          ? UNCATEGORIZED 
-          : categories.find((c) => c.id === catId)?.name ?? catId
-        const draggedCat = draggedProject.category || UNCATEGORIZED
-        if (draggedCat === targetCat) return
-        const destProjects = unpinnedProjects.filter(
-          (p) => (p.category || UNCATEGORIZED) === targetCat,
-        )
-        const newDest = [...destProjects]
-        newDest.push(draggedProject)
-        await onMoveProject(draggedId, targetCat === UNCATEGORIZED ? '' : targetCat, newDest.map((p) => p.id))
-        return
-      }
-
-      const targetProject = projectsById.get(targetId)
-      if (!targetProject) return
-
-      const draggedCat = draggedProject.category || UNCATEGORIZED
-      const targetCat = targetProject.category || UNCATEGORIZED
-
-      if (draggedCat !== targetCat && onMoveProject) {
-        const destProjects = unpinnedProjects.filter(
-          (p) => (p.category || UNCATEGORIZED) === targetCat,
-        )
-        const destTargetIdx = destProjects.findIndex((p) => p.id === targetId)
-        const insertIdx = destTargetIdx >= 0 ? destTargetIdx : destProjects.length
-        const newDest = [...destProjects]
-        newDest.splice(insertIdx, 0, draggedProject)
-        await onMoveProject(draggedId, targetCat === UNCATEGORIZED ? '' : targetCat, newDest.map((p) => p.id))
-      } else if (draggedCat === targetCat) {
-        const catProjects = unpinnedProjects.filter(
-          (p) => (p.category || UNCATEGORIZED) === draggedCat,
-        )
-        const oldIdx = catProjects.findIndex((p) => p.id === draggedId)
-        const newIdx = catProjects.findIndex((p) => p.id === targetId)
-        if (oldIdx !== -1 && newIdx !== -1) {
-          const reordered = arrayMove(catProjects, oldIdx, newIdx)
-          await onReorder(reordered.map((p) => p.id))
-        }
-      }
-    },
-    [projectsById, unpinnedProjects, categories, onReorder, onMoveProject],
+  const sortableIds = useMemo(
+    () => sortableProjects.map((p) => p.id),
+    [sortableProjects],
   )
 
-  const draggedProject = activeDragId ? projectsById.get(activeDragId) ?? null : null
+  const isDndEnabled = Boolean(onReorder)
 
-  const dragContextValue = useMemo(
-    () => ({ activeDragId, categoryMap }),
-    [activeDragId, categoryMap],
+  const dnd = useProjectDnd({
+    projects: sortableProjects,
+    categories,
+    grouped,
+    prefixes: { category: 'list-cat-' },
+    collisionDetection: closestCenter,
+    onReorder,
+    onMoveProject,
+  })
+
+  const cardBody = (p: Project) => renderCard(p)
+
+  const animatedCard = (p: Project) =>
+    animateList ? (
+      <motion.div
+        key={p.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+        transition={layoutTransition}
+        className="min-w-0"
+      >
+        {cardBody(p)}
+      </motion.div>
+    ) : (
+      <div key={p.id} className="min-w-0">
+        {cardBody(p)}
+      </div>
+    )
+
+  const pinnedCard = (p: Project) =>
+    animateList ? (
+      <motion.div
+        key={p.id}
+        layout
+        layoutId={p.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+        transition={layoutTransition}
+        className="min-w-0"
+      >
+        {cardBody(p)}
+      </motion.div>
+    ) : (
+      <div key={p.id} className="min-w-0">
+        {cardBody(p)}
+      </div>
+    )
+
+  const sortableCard = (p: Project) => (
+    <SortableProjectItem
+      key={p.id}
+      id={p.id}
+      className="px-2"
+      gripClassName="left-0.5"
+    >
+      {animatedCard(p)}
+    </SortableProjectItem>
   )
+
+  const cardFor = isDndEnabled ? sortableCard : animatedCard
 
   const pinnedHeader = (
-    <div className="mt-1 mb-0.5 flex items-center gap-2 px-1 rounded-item">
+    <div
+      key="pinned-header"
+      className="mt-1 mb-0.5 flex items-center gap-2 px-1 rounded-item"
+    >
       <IconPin className="w-3 h-3 text-accent-bright" fill="currentColor" />
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">
         {t('pinned_section')}
@@ -406,157 +309,128 @@ export function ProjectCardList({
     </div>
   )
 
-  const cardForDnd = (p: Project) => {
-    const card = renderCard(p)
-    return (
-      <SortableProjectCard
-        key={p.id}
-        id={p.id}
+  const renderGrouped = (): ReactNode[] => {
+    const result: ReactNode[] = []
+    for (const cat of categories) {
+      const projs = groups.get(cat.name) ?? []
+      result.push(
+        <CategorySection
+          key={`cat-${cat.id}`}
+          title={cat.name}
+          color={cat.color}
+          count={projs.length}
+          defaultOpen={projs.length > 0}
+          disableAnimation={isDndEnabled}
+          droppableId={`list-cat-${cat.id}`}
+        >
+          {projs.map((p) => cardFor(p))}
+        </CategorySection>,
+      )
+    }
+    const uncategorized = groups.get(UNCATEGORIZED) ?? []
+    result.push(
+      <CategorySection
+        key="cat-uncategorized"
+        title={t('uncategorized')}
+        count={uncategorized.length}
+        defaultOpen={uncategorized.length > 0}
+        disableAnimation={isDndEnabled}
+        droppableId="list-cat-uncategorized"
       >
-        <div className="px-2">{card}</div>
-      </SortableProjectCard>
+        {uncategorized.map((p) => cardFor(p))}
+      </CategorySection>,
     )
+    // Category names that no longer exist in the category list.
+    for (const key of orderedCategoryKeys) {
+      if (key === UNCATEGORIZED || categories.some((c) => c.name === key)) {
+        continue
+      }
+      const projs = groups.get(key) ?? []
+      result.push(
+        <CategorySection
+          key={`cat-stray-${key}`}
+          title={key}
+          count={projs.length}
+          defaultOpen={projs.length > 0}
+          disableAnimation={isDndEnabled}
+          droppableId={`list-cat-${key}`}
+        >
+          {projs.map((p) => cardFor(p))}
+        </CategorySection>,
+      )
+    }
+    return result
   }
 
-  const dndCategoryGroups = useMemo(() => {
-    if (!categoriesEnabled || categories.length === 0 || !isDndEnabled) {
-      return null
-    }
-    const groups = new Map<string, Project[]>()
-    for (const p of unpinnedProjects) {
-      const cat = p.category || UNCATEGORIZED
-      if (!groups.has(cat)) groups.set(cat, [])
-      groups.get(cat)!.push(p)
-    }
-    return groups
-  }, [categoriesEnabled, categories, unpinnedProjects, isDndEnabled])
+  const unpinnedContent = grouped
+    ? renderGrouped()
+    : unpinnedProjects.map((p) => cardFor(p))
 
-  const listChildren: ReactNode[] = projects.length === 0
-    ? [emptyState]
-    : showPinnedSection
-      ? [
-          <div
-            key="pinned-top-divider"
-            className="h-0.5 my-1 bg-outline"
-            style={{ backgroundColor: 'var(--color-outline)' }}
-          />,
-          pinnedHeader,
-          ...pinnedProjects.map((p) => cardFor(p)),
-          <div
-            key="pinned-bottom-divider"
-            className="h-0.5 my-1 bg-outline"
-            style={{ backgroundColor: 'var(--color-outline)' }}
-          />,
-          ...(dndCategoryGroups || categoryGroups
-            ? renderCategoryGroups(
-                (dndCategoryGroups || categoryGroups)!,
-                categories,
-                isDndEnabled ? cardForDnd : cardFor,
-                t('uncategorized'),
-                isDndEnabled,
-              )
-            : unpinnedProjects.map((p) => isDndEnabled ? cardForDnd(p) : cardFor(p))),
-        ]
-      : (dndCategoryGroups || categoryGroups)
-        ? renderCategoryGroups(
-            (dndCategoryGroups || categoryGroups)!,
-            categories,
-            isDndEnabled ? cardForDnd : cardFor,
-            t('uncategorized'),
-            isDndEnabled,
-          )
-        : projects.map((p) => isDndEnabled ? cardForDnd(p) : cardFor(p))
+  const listChildren: ReactNode[] =
+    projects.length === 0
+      ? [emptyState]
+      : showPinnedSection
+        ? [
+            <div
+              key="pinned-top-divider"
+              className="h-0.5 my-1 bg-outline"
+              style={{ backgroundColor: 'var(--color-outline)' }}
+            />,
+            pinnedHeader,
+            ...pinnedProjects.map((p) => pinnedCard(p)),
+            <div
+              key="pinned-bottom-divider"
+              className="h-0.5 my-1 bg-outline"
+              style={{ backgroundColor: 'var(--color-outline)' }}
+            />,
+            ...unpinnedContent,
+          ]
+        : unpinnedContent
 
-  if (isDndEnabled) {
-    return (
-      <div className="flex-1 min-h-0 relative flex flex-col gap-2">
-        <DragStateContext.Provider value={dragContextValue}>
-          <DndContext
-            sensors={dndSensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={sortableIds}
-              strategy={verticalListSortingStrategy}
-            >
-              {listChildren}
-            </SortableContext>
-            <DragOverlay
-              dropAnimation={{
-                duration: 280,
-                easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-              }}
-            >
-              {draggedProject ? (
-                <div className="rounded-item shadow-2xl shadow-black/30 scale-[1.015] ring-1 ring-accent/20 bg-overlay/95 backdrop-blur-sm">
-                  {renderCard(draggedProject)}
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        </DragStateContext.Provider>
-        {projects.length > 0 && (
-          <div className="shrink-0 h-4" aria-hidden="true" />
-        )}
-      </div>
-    )
-  }
+  const list = animateList ? (
+    <AnimatePresence initial={false}>{listChildren}</AnimatePresence>
+  ) : (
+    listChildren
+  )
 
   return (
     <div className="flex-1 min-h-0 relative flex flex-col gap-2">
-      {animateList ? (
-        <AnimatePresence initial={false}>{listChildren}</AnimatePresence>
+      {isDndEnabled ? (
+        <DndContext
+          sensors={dnd.sensors}
+          collisionDetection={dnd.collisionDetection ?? closestCenter}
+          autoScroll={AUTO_SCROLL_CONFIG}
+          onDragStart={dnd.handleDragStart}
+          onDragMove={dnd.handleDragMove}
+          onDragEnd={dnd.handleDragEnd}
+          onDragCancel={dnd.handleDragCancel}
+        >
+          <SortableContext
+            items={sortableIds}
+            strategy={verticalListSortingStrategy}
+          >
+            {list}
+          </SortableContext>
+          <ProjectDropLine ignorePrefix="list-cat-" />
+          <DragOverlay
+            dropAnimation={{
+              duration: DRAG_FEEL.drop.duration,
+              easing: DRAG_FEEL.drop.easing,
+            }}
+          >
+            {dnd.activeProject ? (
+              <ProjectDragOverlay innerRef={dnd.overlayRef}>
+                <div className="px-2">{cardBody(dnd.activeProject)}</div>
+              </ProjectDragOverlay>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       ) : (
-        listChildren
+        list
       )}
       {projects.length > 0 && (
         <div className="shrink-0 h-4" aria-hidden="true" />
       )}
     </div>
   )
-}
-
-function renderCategoryGroups(
-  groups: Map<string, Project[]>,
-  categories: Category[],
-  cardFor: (p: Project) => ReactNode,
-  uncategorizedLabel: string,
-  disableAnimation = false,
-): ReactNode[] {
-  const result: ReactNode[] = []
-  const uncategorized = groups.get(UNCATEGORIZED) ?? []
-
-  for (const cat of categories) {
-    const projs = groups.get(cat.name) ?? []
-    result.push(
-      <CategorySection
-        key={`cat-${cat.id}`}
-        title={cat.name}
-        color={cat.color}
-        count={projs.length}
-        defaultOpen={projs.length > 0}
-        disableAnimation={disableAnimation}
-        droppableId={`list-cat-${cat.id}`}
-      >
-        {projs.map((p) => cardFor(p))}
-      </CategorySection>,
-    )
-  }
-
-  result.push(
-    <CategorySection
-      key="cat-uncategorized"
-      title={uncategorizedLabel}
-      count={uncategorized.length}
-      defaultOpen={uncategorized.length > 0}
-      disableAnimation={disableAnimation}
-      droppableId="list-cat-uncategorized"
-    >
-      {uncategorized.map((p) => cardFor(p))}
-    </CategorySection>,
-  )
-
-  return result
 }

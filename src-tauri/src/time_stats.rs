@@ -1,7 +1,8 @@
 use crate::persist;
-use chrono::{Datelike, Duration, Timelike};
+use chrono::{Datelike, Duration};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::AppHandle;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,6 +37,110 @@ pub fn write_stats(app: &AppHandle, store: &TimeStatsStore) {
     write_stats_to(&crate::workspace::active_workspace_dir(app), store);
 }
 
+/// Start of the local day `date` began, or `None` on a DST edge where midnight
+/// does not exist (parts of Brazil, Chile and Lebanon shift at 00:00).
+fn local_day_start(date: chrono::NaiveDate) -> Option<chrono::DateTime<chrono::Local>> {
+    date.and_hms_opt(0, 0, 0)
+        .and_then(|dt| dt.and_local_timezone(chrono::Local).earliest())
+}
+
+fn overlap_seconds(
+    a_start: chrono::DateTime<chrono::Local>,
+    a_end: chrono::DateTime<chrono::Local>,
+    b_start: chrono::DateTime<chrono::Local>,
+    b_end: chrono::DateTime<chrono::Local>,
+) -> u64 {
+    let start = a_start.max(b_start);
+    let end = a_end.min(b_end);
+    if end <= start {
+        0
+    } else {
+        (end - start).num_seconds().max(0) as u64
+    }
+}
+
+/// Credit `seconds` to every local date the session actually covers.
+///
+/// Crediting the whole span to the start date is what lets a single day report
+/// more than 24 hours once a session runs past midnight.
+fn add_to_daily(
+    store: &mut TimeStatsStore,
+    project_id: &str,
+    start: chrono::DateTime<chrono::Local>,
+    seconds: u64,
+) {
+    let mut cursor = start;
+    let mut remaining = seconds as i64;
+    let mut guard = 0;
+    while remaining > 0 && guard < 400 {
+        guard += 1;
+        let date = cursor.date_naive();
+        let Some(next) = date.succ_opt().and_then(local_day_start) else {
+            break;
+        };
+        let available = (next - cursor).num_seconds().max(1);
+        let slice = remaining.min(available);
+        *store
+            .daily
+            .entry(project_id.to_string())
+            .or_default()
+            .entry(date.format("%Y-%m-%d").to_string())
+            .or_insert(0) += slice as u64;
+        remaining -= slice;
+        cursor = next;
+    }
+    if remaining > 0 {
+        let date = cursor.date_naive().format("%Y-%m-%d").to_string();
+        *store
+            .daily
+            .entry(project_id.to_string())
+            .or_default()
+            .entry(date)
+            .or_insert(0) += remaining as u64;
+    }
+}
+
+/// How often the "app is alive" heartbeat is written while a project runs.
+const ACTIVITY_WRITE_INTERVAL_MS: u64 = 20_000;
+static LAST_ACTIVITY_WRITE: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+struct ActivityHeartbeat {
+    #[serde(default)]
+    last_active_ms: u64,
+}
+
+fn activity_file(dir: &std::path::Path) -> std::path::PathBuf {
+    dir.join("time_activity.json")
+}
+
+/// Record that the app is alive right now (throttled).
+///
+/// A session that outlives the app is settled on the next launch using this
+/// timestamp as the upper bound, so an unexpected exit can never credit the
+/// hours the app was not running.
+pub fn touch_activity(app: &AppHandle) {
+    let now = crate::projects::epoch_ms();
+    let last = LAST_ACTIVITY_WRITE.load(Ordering::Relaxed);
+    if now.saturating_sub(last) < ACTIVITY_WRITE_INTERVAL_MS {
+        return;
+    }
+    LAST_ACTIVITY_WRITE.store(now, Ordering::Relaxed);
+    let heartbeat = ActivityHeartbeat { last_active_ms: now };
+    let _ = persist::write_json(
+        &activity_file(&crate::workspace::active_workspace_dir(app)),
+        &heartbeat,
+    );
+}
+
+/// Last known moment the app was running, or 0 when never recorded.
+pub fn last_active_ms(app: &AppHandle) -> u64 {
+    persist::read_json::<ActivityHeartbeat>(&activity_file(
+        &crate::workspace::active_workspace_dir(app),
+    ))
+    .last_active_ms
+}
+
 pub fn record_session(app: &AppHandle, project_id: &str, start_ms: u64, seconds: u64) {
     if seconds == 0 {
         return;
@@ -52,13 +157,7 @@ pub fn record_session(app: &AppHandle, project_id: &str, start_ms: u64, seconds:
         chrono::DateTime::<chrono::Utc>::from_timestamp_millis(start_ms as i64)
             .map(|t| t.with_timezone(&chrono::Local))
     {
-        let date = start.format("%Y-%m-%d").to_string();
-        *store
-            .daily
-            .entry(project_id.to_string())
-            .or_default()
-            .entry(date)
-            .or_insert(0) += seconds;
+        add_to_daily(&mut store, project_id, start, seconds);
     }
     write_stats(app, &store);
 }
@@ -87,6 +186,15 @@ pub fn get_activity(app: AppHandle, range: String) -> Vec<(String, u64)> {
             let today = now.date_naive();
             let mut buckets = [0u64; 24];
 
+            let (Some(day_start), Some(day_end)) = (
+                local_day_start(today),
+                today.succ_opt().and_then(local_day_start),
+            ) else {
+                return (0..24)
+                    .map(|h| (format!("{}:{:02}", today.format("%Y-%m-%d"), h), 0))
+                    .collect();
+            };
+
             for sessions in store.projects.values() {
                 for s in sessions {
                     let Some(start) = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(
@@ -96,21 +204,15 @@ pub fn get_activity(app: AppHandle, range: String) -> Vec<(String, u64)> {
                     else {
                         continue;
                     };
-                    if start.date_naive() != today {
+                    let end = start + Duration::seconds(s.seconds as i64);
+                    // Include sessions that began yesterday but ran past midnight.
+                    if end <= day_start || start >= day_end {
                         continue;
                     }
-                    let start_secs =
-                        start.hour() as u64 * 3600 + start.minute() as u64 * 60 + start.second() as u64;
-                    let end_secs = start_secs + s.seconds;
-
-                    for h in 0..24u64 {
-                        let h_start = h * 3600;
-                        let h_end = h_start + 3600;
-                        let overlap_start = start_secs.max(h_start);
-                        let overlap_end = end_secs.min(h_end);
-                        if overlap_end > overlap_start {
-                            buckets[h as usize] += overlap_end - overlap_start;
-                        }
+                    for h in 0..24i64 {
+                        let h_start = day_start + Duration::hours(h);
+                        let h_end = h_start + Duration::hours(1);
+                        buckets[h as usize] += overlap_seconds(start, end, h_start, h_end);
                     }
                 }
             }
@@ -292,8 +394,22 @@ pub fn breakdown(
     let Some(sessions) = store.projects.get(project_id) else {
         return (0, 0);
     };
-    let mut today = 0u64;
-    let mut week = 0u64;
+    let today = now.date_naive();
+    let week_start_date =
+        today - Duration::days(today.weekday().num_days_from_monday() as i64);
+
+    let (Some(today_start), Some(day_end), Some(week_start)) = (
+        local_day_start(today),
+        today.succ_opt().and_then(local_day_start),
+        local_day_start(week_start_date),
+    ) else {
+        return (0, 0);
+    };
+
+    // "Today" is the part of each session that falls inside today, not whole
+    // sessions that merely started today.
+    let mut today_secs = 0u64;
+    let mut week_secs = 0u64;
     for s in sessions {
         let Some(start) =
             chrono::DateTime::<chrono::Utc>::from_timestamp_millis(s.start_ms as i64)
@@ -301,14 +417,11 @@ pub fn breakdown(
         else {
             continue;
         };
-        if start.date_naive() == now.date_naive() {
-            today += s.seconds;
-        }
-        if start.iso_week() == now.iso_week() {
-            week += s.seconds;
-        }
+        let end = start + Duration::seconds(s.seconds as i64);
+        today_secs += overlap_seconds(start, end, today_start, day_end);
+        week_secs += overlap_seconds(start, end, week_start, day_end);
     }
-    (today, week)
+    (today_secs, week_secs)
 }
 
 #[tauri::command]
